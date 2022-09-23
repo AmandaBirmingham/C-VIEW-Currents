@@ -1,0 +1,48 @@
+- name: A
+  children:
+      - A
+      - B.1
+      - B.1.528
+      - B.1.529
+- name: B
+  children:
+      - B.1.528
+      - B.1.529
+  parent: A
+- name: B.1
+  children:
+  parent: B
+- name: B.1.529
+  children:
+      - B.1.529
+  parent: B.1
+- name: BA.2
+  children:
+      - BA.2
+  parent: B.1.1.529
+- name: BA.5
+  children:
+      - BA.5
+  parent: B.1.1.529
+- name: BA.5.2
+  children:
+      - BA.5.2
+      - BA.5.2.1
+      - BA.5.2.2
+      - BA.5.2.3
+      - BA.5.2.4
+      - BA.5.2.5
+  parent: BA.5
+- name: BA.5.2.1
+  children:
+      - BA.5.2.1
+  parent: BA.5.2
+- name: BF.1
+  children:
+      - BF.1
+      - BF.1.1
+  parent: B.1.1.529.5.2.1
+- name: BA.2.12
+  children:
+      - BA.2.12
+  parent: BA.2

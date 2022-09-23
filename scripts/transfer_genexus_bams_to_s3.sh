@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Download BAMs from the Genexus machine to local instance,
+# then upload them to S3 and delete local copies.
+#
+# NOTE: before using this script on a new instance, *first ensure*:
+# * aws cli has been configured on the instance
+# * an rsa key is in ~/genexus/id_rsa
+# * the public rsa key has been placed on the genexus machine, AND
+# * any "placeholder" constants below have been replaced with their real values
+#
+# This script can either identify the BAMS by run name or by using a file of
+# desired sample names.
+#
+# Sample run-name-based usage:
+# bash /shared/workspace/projects/covid/scripts/transfer_genexus_bams_to_s3.sh /shared/workspace/projects/covid/data s3://ucsd-rtl-test 20220401_CLIA
+#
+# Sample sample-name-file-based usage:
+# bash /shared/workspace/projects/covid/scripts/transfer_genexus_bams_to_s3.sh /shared/workspace/projects/covid/data s3://ucsd-rtl-test 20220401_CLIA /shared/workspace/projects/covid/data/sample_names.txt
+# where the sample_names.txt file contains no header and one sample name per line, e.g.,
+#
+# CALM_SEP_008066_19
+# EXC_MW4_367431
+# EXC_MW4_394788
+#
+# Derived from download_bams_genexus.sh (2022-03-21) (Niema Moshiri)
+
+# important constants
+GENEXUS_USERNAME='placeholder'
+GENEXUS_IP='placeholder'
+GENEXUS_REPORTS='placeholder'
+GENEXUS_BAM='merged.bam.ptrim.bam'
+GENEXUS_RSA_FP=~/genexus/id_rsa
+OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'
+
+# check usage
+samplenames_input=0
+if [ "$#" -ne 4 ] ; then
+  if [ "$#" -ne 3 ] ; then
+    echo "USAGE: $0 <output_dir> <s3_bucket_url> <run_name> [optional <sample_names.txt>]"; exit 1
+  fi
+else
+  samplenames_input=1
+  SAMPLENAMES_FP=$4
+fi
+
+LOCAL_DIR=$1
+# if the local dir ends with a slash, remove the slash
+if [[ "$LOCAL_DIR" == */ ]]; then
+  LOCAL_DIR=${LOCAL_DIR%/*}
+fi
+
+S3_BUCKET=$2
+RUN_NAME=$3
+OUTPUT_S3_URLS_FP="$LOCAL_DIR/$RUN_NAME"_s3_urls.txt
+UPLOAD_S3_FOLDER="$S3_BUCKET/$RUN_NAME/$RUN_NAME"_bam
+
+# check local folder
+LOCAL_RUN_DIR=$LOCAL_DIR/$RUN_NAME
+if [ -d "$LOCAL_RUN_DIR" ] ; then
+    echo "Specified local folder already exists: $LOCAL_RUN_DIR" ; exit 1
+elif [ -f "$LOCAL_RUN_DIR" ] ; then
+    echo "Specified local folder already exists as a file: $LOCAL_RUN_DIR" ; exit 1
+else
+    echo "Creating local folder: $LOCAL_RUN_DIR"
+    mkdir "$LOCAL_RUN_DIR"
+fi
+
+if [ $samplenames_input ] ; then
+  FOLDER_IDENTIFIERS=($(cat "$SAMPLENAMES_FP"))
+else
+  FOLDER_IDENTIFIERS=("$RUN_NAME")
+fi
+
+BAM_PATHS=()
+for folder_id in "${FOLDER_IDENTIFIERS[@]}" ; do
+    BAM_PATHS+=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$folder_id*/$GENEXUS_BAM"))
+done
+
+# download BAMs
+RIGHT_CRUFT="$GENEXUS_REPORTS/AssayDev_"
+for bam_path in "${BAM_PATHS[@]}" ; do
+  temp_name=${bam_path/${RIGHT_CRUFT}/}  # Remove the left part.
+  sample_name=${temp_name%%_SARS-CoV-2Insight*}  # Remove the right part.
+
+  # if samplenames were input, assume they are one-offs
+  # that don't follow naming convention :-| so rename them accordingly
+  if [ $samplenames_input ] ; then
+    sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
+  fi
+
+  sample_fname="$sample_name.$OUT_BAM_SUF"
+  local_path="$LOCAL_RUN_DIR/$sample_fname"
+  s3_bam_url="$UPLOAD_S3_FOLDER/$sample_fname"
+
+  echo "Downloading: $bam_path to $local_path"
+  scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
+  scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path".bai "$local_path".bai
+
+  echo "$s3_bam_url" >> "$OUTPUT_S3_URLS_FP"
+done
+
+# TODO: Alternately, could capture S3 locations from stdio output of s3 cp
+#  which looks like
+#  upload: myDir/test1.txt to s3://mybucket/test1.txt
+#  Although would need some massaging, would also be more strictly accurate
+echo "Uploading local folder contents to s3"
+aws s3 cp "$LOCAL_RUN_DIR/" "$UPLOAD_S3_FOLDER" --recursive
+
+echo "Removing local folder: $LOCAL_RUN_DIR"
+rm -rf "$LOCAL_RUN_DIR"
