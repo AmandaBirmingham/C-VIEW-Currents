@@ -1,4 +1,4 @@
-![Vector currents](/images/blue-waves-2317606_1280_trimmed_squeezed?raw=true)
+![Vector currents](/images/blue-waves-2317606_1280_trimmed_squeezed.png?raw=true)
 
 # C-VIEW Currents
 An extension to the [C-VIEW](https://github.com/ucsd-ccbb/C-VIEW) 
