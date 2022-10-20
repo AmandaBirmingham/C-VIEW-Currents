@@ -8,13 +8,7 @@
 # * the public rsa key has been placed on the genexus machine, AND
 # * any "placeholder" constants below have been replaced with their real values
 #
-# This script can either identify the BAMS by run name or by using a file of
-# desired sample names.
-#
-# Sample run-name-based usage:
-# bash /shared/workspace/projects/covid/scripts/transfer_genexus_bams_to_s3.sh /shared/workspace/projects/covid/data s3://ucsd-rtl-test 20220401_CLIA
-#
-# Sample sample-name-file-based usage:
+# Sample usage:
 # bash /shared/workspace/projects/covid/scripts/transfer_genexus_bams_to_s3.sh /shared/workspace/projects/covid/data s3://ucsd-rtl-test 20220401_CLIA /shared/workspace/projects/covid/data/sample_names.txt
 # where the sample_names.txt file contains no header and one sample name per line, e.g.,
 #
@@ -33,13 +27,9 @@ GENEXUS_RSA_FP=~/genexus/id_rsa
 OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'
 
 # check usage
-samplenames_input=0
 if [ "$#" -ne 4 ] ; then
-  if [ "$#" -ne 3 ] ; then
-    echo "USAGE: $0 <output_dir> <s3_bucket_url> <run_name> [optional <sample_names.txt>]"; exit 1
-  fi
+  echo "USAGE: $0 <output_dir> <s3_bucket_url> <run_name> <sample_names.txt>"; exit 1
 else
-  samplenames_input=1
   SAMPLENAMES_FP=$4
 fi
 
@@ -65,11 +55,7 @@ else
     mkdir "$LOCAL_RUN_DIR"
 fi
 
-if [ $samplenames_input ] ; then
-  FOLDER_IDENTIFIERS=($(cat "$SAMPLENAMES_FP"))
-else
-  FOLDER_IDENTIFIERS=("$RUN_NAME")
-fi
+FOLDER_IDENTIFIERS=($(cat "$SAMPLENAMES_FP"))
 
 BAM_PATHS=()
 for folder_id in "${FOLDER_IDENTIFIERS[@]}" ; do
@@ -82,11 +68,9 @@ for bam_path in "${BAM_PATHS[@]}" ; do
   temp_name=${bam_path/${RIGHT_CRUFT}/}  # Remove the left part.
   sample_name=${temp_name%%_SARS-CoV-2Insight*}  # Remove the right part.
 
-  # if samplenames were input, assume they are one-offs
-  # that don't follow naming convention :-| so rename them accordingly
-  if [ $samplenames_input ] ; then
-    sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
-  fi
+  # assume sample names don't follow naming convention used by C-VIEW,
+  # so munge them into that format for compatibility
+  sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
 
   sample_fname="$sample_name.$OUT_BAM_SUF"
   local_path="$LOCAL_RUN_DIR/$sample_fname"
