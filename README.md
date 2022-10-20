@@ -182,7 +182,9 @@ nano /shared/runfiles/221013_WW_samples.txt
 
 ```
 # Example:
+
 cd /shared/workspace/software/cview_currents/scripts
+# Command format:
 # bash transfer_genexus_bams_to_s3.sh <local_dir> <s3_parent_directory> <run_name> <samples_file>
 bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-all 221013_WW /shared/runfiles/221013_WW_samples.txt
 ```
@@ -193,6 +195,7 @@ bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-all 221013_WW /shared
    
 ```
 # Example: contents of /shared/temp/221013_WW_s3_urls.txt:
+
 s3://ucsd-all/221010_WW/221010_WW_bam/10.4.22.ENCOCT03.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
 s3://ucsd-all/221010_WW/221010_WW_bam/10.4.22.ENCSEP29.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
 s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.PLOCT02.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
@@ -209,10 +212,13 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X
       3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
 
 ```
+# Example:
+
 cd /shared/workspace/software/cview_currents/scripts
+# Command format:
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
 bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja
-# if desired, check job status by running
+# If desired, check job status by running:
 squeue
 ```
 

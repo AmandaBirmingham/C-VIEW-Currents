@@ -8,7 +8,7 @@ from src.freyja_processing_utils import _munge_lineage_label,\
     unmunge_lineage_label, reformat_labels_df, make_freyja_w_id_df, \
     validate_length, explode_sample_freyja_results, \
     explode_and_label_sample_freyja_results, get_freyja_results_fp, \
-    load_inputs_from_input_dir, get_ref_dir, OTHER_LINEAGE_LABEL
+    load_inputs_from_input_dir, OTHER_LINEAGE_LABEL
 
 
 class FreyjaProcessingUtilsTest(FileTestCase):
@@ -700,8 +700,4 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         self.assertEqual(self.curated_lineages, cur_lineages)
         pandas.testing.assert_frame_equal(expected_freyja_df, freyja_df)
 
-    def test_get_ref_dir(self):
-        ref_dir = get_ref_dir()
-        # The output can't be tested for exact correctness because it is
-        # an absolute path; settle for checking the part that is constant
-        self.assertTrue(ref_dir.endswith("/cview-currents/reference_files"))
+    # get_ref_dir can't reasonably be tested because it gives an absolute path
