@@ -27,7 +27,7 @@
 # important constants
 GENEXUS_USERNAME='placeholder'
 GENEXUS_IP='placeholder'
-GENEXUS_REPORTS='placeholder'
+GENEXUS_REPORTS='/serverdata/results/analysis/output/reports'
 GENEXUS_BAM='merged.bam.ptrim.bam'
 GENEXUS_RSA_FP=~/genexus/id_rsa
 OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'

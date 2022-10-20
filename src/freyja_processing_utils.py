@@ -5,6 +5,7 @@ import urllib.request
 import glob
 import yaml
 import json
+import os
 
 VARIANTS_LIST_KEY = "summarized"
 LINEAGES_LIST_KEY = "lineages"
@@ -323,7 +324,7 @@ def get_freyja_results_fp(input_dir):
     return freyja_results_fps[0]
 
 
-def get_input_fps_from_input_dir(labels_to_aggregate_fp, input_dir):
+def load_inputs_from_input_dir(labels_to_aggregate_fp, input_dir):
     lineages_yaml_fp = f"{input_dir}/lineages.yml"
     curated_lineages_json_fp = f"{input_dir}/curated_lineages.json"
     freyja_results_fp = get_freyja_results_fp(input_dir)
@@ -381,14 +382,24 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
     subprocess.run(cmd2, shell=True)
 
 
+def get_ref_dir():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.join(curr_dir, os.pardir)
+    ref_dir = os.path.abspath(os.path.join(parent_dir, "reference_files"))
+    return ref_dir
+
+
 def freyja_download():
-    urls_fp = argv[3] if len(argv) == 4 else None
-    download_inputs(argv[1], argv[2], urls_fp)
+    summary_s3_url = argv[0]
+    output_dir = argv[1]
+    if len(argv) == 3:
+        urls_fp = argv[2]
+    else:
+        ref_dir = get_ref_dir()
+        urls_fp = os.join(ref_dir, "inputs_url.txt")
+
+    download_inputs(summary_s3_url, output_dir, urls_fp)
 
 
 if __name__ == '__main__':
-    if argv[1] == "download":
-        urls_fp = argv[4] if len(argv) == 5 else None
-        download_inputs(argv[2], argv[3], urls_fp)
-    else:
-        raise ValueError("Unrecognized util command")
+    freyja_download()

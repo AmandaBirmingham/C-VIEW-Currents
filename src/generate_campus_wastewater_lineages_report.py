@@ -4,7 +4,7 @@ import pandas
 import pathlib
 import re
 from src.freyja_processing_utils import make_freyja_w_id_df, validate_length,\
-    get_input_fps_from_input_dir, get_freyja_results_fp, reformat_labels_df, \
+    load_inputs_from_input_dir, get_freyja_results_fp, reformat_labels_df, \
     explode_and_label_sample_freyja_results, unmunge_lineage_label, \
     COMPONENT_KEY, COMPONENT_FRAC_KEY, LINEAGE_COMP_TYPE, \
     LINEAGE_LABEL_KEY, VARIANT_LABEL_KEY
@@ -209,7 +209,7 @@ def generate_dashboard_report(arg_list):
         usecols=lambda x: x in [GOOGLE_SAMPLER_ID_KEY, GOOGLE_MANHOLE_ID_KEY])
 
     labels_to_aggregate_df, lineage_to_parent_dict, \
-    curated_lineages, freyja_ww_df = get_input_fps_from_input_dir(
+    curated_lineages, freyja_ww_df = load_inputs_from_input_dir(
         labels_fp, freyja_input_dir)
 
     search_labels_df, _ = reformat_labels_df(

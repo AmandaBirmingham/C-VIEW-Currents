@@ -2,9 +2,9 @@ from sys import argv
 import pathlib
 import pandas
 from src.freyja_processing_utils import make_freyja_w_id_df, \
-    explode_and_label_sample_freyja_results, get_input_fps_from_input_dir, \
-    unmunge_lineage_label, reformat_labels_df, SITE_LOCATION_KEY, \
-    ROLLUP_LABEL_KEY, OTHER_LABEL, OTHER_LINEAGE_LABEL, \
+    explode_and_label_sample_freyja_results, load_inputs_from_input_dir, \
+    unmunge_lineage_label, reformat_labels_df, get_ref_dir, \
+    SITE_LOCATION_KEY, ROLLUP_LABEL_KEY, OTHER_LABEL, OTHER_LINEAGE_LABEL, \
     LINEAGE_LABEL_KEY, VARIANT_LABEL_KEY, COMPONENT_FRAC_KEY
 
 MONTH_POS = 0
@@ -126,22 +126,23 @@ def generate_dashboard_report_df(
 
 
 def generate_dashboard_reports(arg_list):
-    labels_fp = arg_list[1]
-    input_dir = arg_list[2]
-    output_dir = arg_list[3]
+    input_dir = arg_list[0]
+    output_dir = arg_list[1]
+    if len(arg_list) > 2:
+        labels_fp = arg_list[2]
+    else:
+        ref_dir = get_ref_dir()
+        labels_fp = _get_latest_file(ref_dir, "sewage_seq_labels_")
+
     exploded_out_dir = output_dir
-    if len(arg_list) > 4:
-        arg_last = arg_list[4]
-        if arg_last != "suppress":
-            raise ValueError(f"found unrecognized last argument: '{arg_last}' "
-                             f"instead of 'suppress'")
+    if arg_list[-1] == "suppress":
         exploded_out_dir = None
 
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
     labels_to_aggregate_df, lineage_to_parents_dict, \
-    curated_lineages, freyja_ww_df = get_input_fps_from_input_dir(
+    curated_lineages, freyja_ww_df = load_inputs_from_input_dir(
         labels_fp, input_dir)
 
     labels_df = pandas.read_csv(labels_fp)
@@ -164,6 +165,16 @@ def generate_dashboard_reports(arg_list):
     # next location
 
     return output_fps
+
+
+def _get_latest_file(dir_path, filename_root=""):
+    dir_path_obj = pathlib.Path(dir_path)
+    latest_fp = None
+    relevant_fps = list(dir_path_obj.glob(f"*{filename_root}*"))
+    if len(relevant_fps) > 0:
+        latest_fp = max(relevant_fps,
+                        key=lambda item: item.stat().st_ctime)
+    return latest_fp
 
 
 def main():

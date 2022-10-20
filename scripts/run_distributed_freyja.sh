@@ -6,9 +6,9 @@
 # * any "placeholder" constants below have been replaced with their real values
 #
 # Sample usage:
-# bash /shared/workspace/software/cutils/scripts/run_distributed_freyja.sh /shared/temp/220708_run_bam_s3_urls.txt 220708_run s3://ucsd-rtl-test
+# bash /shared/workspace/software/cview_currents/scripts/run_distributed_freyja.sh /shared/temp/220708_run_bam_s3_urls.txt 220708_run s3://ucsd-rtl-test
 
-CUTILSDIR=/shared/workspace/software/cutils
+CUTILSDIR=/shared/workspace/software/cview_currents
 
 if [ "$#" -ne 3 ] ; then
   echo "USAGE: $0 <s3_urls_fp> <run_name> <s3_output_base>"; exit 1

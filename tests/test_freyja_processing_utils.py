@@ -8,7 +8,7 @@ from src.freyja_processing_utils import _munge_lineage_label,\
     unmunge_lineage_label, reformat_labels_df, make_freyja_w_id_df, \
     validate_length, explode_sample_freyja_results, \
     explode_and_label_sample_freyja_results, get_freyja_results_fp, \
-    get_input_fps_from_input_dir, OTHER_LINEAGE_LABEL
+    load_inputs_from_input_dir, get_ref_dir, OTHER_LINEAGE_LABEL
 
 
 class FreyjaProcessingUtilsTest(FileTestCase):
@@ -656,7 +656,7 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         real_out = get_freyja_results_fp(self.dummy_dir)
         self.assertEqual(expected_out, real_out)
 
-    def test_get_input_fps_from_input_dir(self):
+    def test_load_inputs_from_input_dir(self):
         expected_labels_dict = {
             "site_location": [
                 "PointLoma", "PointLoma", "PointLoma", "PointLoma", "PointLoma"],
@@ -694,8 +694,14 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         expected_freyja_df = pandas.DataFrame(freyja_dict)
 
         labels_df, l_to_parents_dict, cur_lineages, freyja_df = \
-            get_input_fps_from_input_dir(labels_fp, self.dummy_dir)
+            load_inputs_from_input_dir(labels_fp, self.dummy_dir)
         pandas.testing.assert_frame_equal(expected_labels_df, labels_df)
         self.assertDictEqual(self.lineage_to_parent_dict, l_to_parents_dict)
         self.assertEqual(self.curated_lineages, cur_lineages)
         pandas.testing.assert_frame_equal(expected_freyja_df, freyja_df)
+
+    def test_get_ref_dir(self):
+        ref_dir = get_ref_dir()
+        # The output can't be tested for exact correctness because it is
+        # an absolute path; settle for checking the part that is constant
+        self.assertTrue(ref_dir.endswith("/cview-currents/reference_files"))

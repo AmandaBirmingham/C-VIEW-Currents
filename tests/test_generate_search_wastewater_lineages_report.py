@@ -13,9 +13,8 @@ class GenerateDashboardReportTest(FileTestCase):
 
         # Note: optional last argument 'suppress' suppresses the creation of
         # intermediate exploded per-sample files
-        arg_list = ["generate_search_wastewater_lineages_report.py",
-                    input_label_fp, f"{self.dummy_dir}/dummy_search_inputs",
-                    self.test_temp_dir, "suppress"]
+        arg_list = [f"{self.dummy_dir}/dummy_search_inputs",
+                    self.test_temp_dir, input_label_fp, "suppress"]
 
         out_enc_is_file = out_pl_is_file = False
         out_enc_equal = out_pl_equal = False
