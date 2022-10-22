@@ -44,7 +44,10 @@ else
     mkdir "$LOCAL_DIR"
 fi
 
-FOLDER_IDENTIFIERS=($(cat "$SAMPLENAMES_FP"))
+# take the first column of a comma-delimited file;
+# note that it is fine for the file to contain only one column
+# (and thus no commas)
+FOLDER_IDENTIFIERS=($(awk -F "," '{print $1}' "$SAMPLENAMES_FP"))
 BAM_PATHS=()
 for folder_id in "${FOLDER_IDENTIFIERS[@]}" ; do
     BAM_PATHS+=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$folder_id*/$GENEXUS_BAM"))
