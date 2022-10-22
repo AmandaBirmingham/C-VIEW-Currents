@@ -700,4 +700,47 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         self.assertEqual(self.curated_lineages, cur_lineages)
         pandas.testing.assert_frame_equal(expected_freyja_df, freyja_df)
 
+    def test_load_inputs_from_input_dir_fail_require_metadata(self):
+        expected_labels_dict = {
+            "site_location": [
+                "PointLoma", "PointLoma", "PointLoma", "PointLoma", "PointLoma"],
+            "site_prefix": [
+                "PL", "PL", "PL", "PL", "PL"],
+            "rollup_label": [
+                "Omicron", "MadeUp", "BA.5.X", "BA.1.1.X", "BA.2.12"],
+            "component_type": [
+                "variant", "variant", "lineage", "lineage", "lineage"]
+        }
+
+        freyja_dict = {
+            "Unnamed: 0": [
+                "SEARCH-91626__E0003116__M08__220527_A01535_0137_BHY5VWDSX3__002.tsv",
+                "SEARCH-91606__E0003116__I07__220527_A01535_0137_BHY5VWDSX3__002.tsv"],
+            "summarized": [
+                "[('BA.2* [Omicron (BA.2.X)]', 0.49641195397196025), ('Omicron', 0.46685900090836957), ('Other', 0.0067319954584884175)]",
+                "[('Omicron', 0.49991486113136663), ('BA.2* [Omicron (BA.2.X)]', 0.4556013287335106), ('Other', 0.01207076124116462)]"],
+            "lineages": [
+                "BA.2.12.1 BA.2.12 BA.5.1 BA.5.2.1 BA.4 BQ.4.1 BA.5.5 BA.5.2",
+                "BA.2.12 BA.5.2 BA.4.1 BA.2.12.1 BF.1 BA.5.2.1 BA.5.5 BA.2.65"],
+            "abundances": [
+                "0.21823342 0.11696584 0.09523810 0.09436590 0.07060140 0.05007211 0.03996610 0.03476859",
+                "0.21069000 0.12159864 0.11619024 0.10317434 0.05307850 0.05039021 0.04800864 0.03985987"],
+            "resid": [
+                9.099812474,
+                8.794045167],
+            "coverage": [
+                98.9399057,
+                99.14724275]
+        }
+
+        labels_fp = f"{self.dummy_dir}/dummy_labels_2022-07-11_22-32-05.csv"
+
+        with self.assertRaisesRegex(
+                ValueError, "Found 0 records in '<wildcard>_freyja_metadata.csv' glob but expected 1"):
+            load_inputs_from_input_dir(
+                labels_fp, self.dummy_dir, require_metadata=True)
+
+    # TODO: add test below
+    # def test_extract_qc_failing_freyja_results(self):
+
     # get_ref_dir can't reasonably be tested because it gives an absolute path

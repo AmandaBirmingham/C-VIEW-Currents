@@ -10,7 +10,10 @@ import os
 VARIANTS_LIST_KEY = "summarized"
 LINEAGES_LIST_KEY = "lineages"
 ABUNDANCES_LIST_KEY = "abundances"
+COVERAGE_KEY = "coverage"
+MIN_ACCEPTABLE_COVERAGE = 60
 FREYJA_FNAME_KEY = "Unnamed: 0"
+FREYJA_RESULTS_FNAME_SUFFIX = "_freyja_aggregated.tsv"
 COMPONENT_KEY = "component"
 COMPONENT_FRAC_KEY = "component_fraction"
 COMPONENT_TYPE_KEY = "component_type"
@@ -28,6 +31,9 @@ OTHER_LINEAGE_LABEL = "Other lineage"
 ROLLUP_LABEL_KEY = "rollup_label"
 MUNGED_LINEAGE_LABEL_KEY = "munged_lineage_label"
 DEALIASED_MUNGED_LINEAGE_LABEL_KEY = "dealiased_munged_lineage_label"
+METADATA_SAMPLE_KEY = "Sample"
+METADATA_DATE_KEY = "sample_collection_datetime"
+METADATA_VIRAL_LOAD_KEY = "viral_load"
 
 
 def _munge_lineage_label(a_label):
@@ -38,7 +44,7 @@ def _munge_lineage_label(a_label):
 
 
 def _get_lineage_to_parents_dict(lineage_file):
-   # Below code borrowed from Andersen lab outbreak-info at
+    # Below code borrowed from Andersen lab outbreak-info at
     # https://github.com/outbreak-info/outbreak.info/blob/c068d139e18fc16370ba14f72dd5595c5122b35a/curated_reports_prep/generate_curated_lineages_json.py#L110-L115
     lineages = yaml.load(lineage_file, Loader=yaml.BaseLoader)
     lineage_to_parent_dict = {}
@@ -230,6 +236,47 @@ def _map_lineage_and_variant_labels(
     return temp_df
 
 
+def _get_single_file_by_suffix(input_dir, suffix, require_file=True):
+    result = None
+    found_fps = glob.glob(f"{input_dir}/*{suffix}")
+    if require_file:
+        validate_length(found_fps, f"'<wildcard>{suffix}' glob", [1])
+    if len(found_fps) > 0:
+        result = found_fps[0]
+    return result
+
+
+def _get_freyja_metadata_fp(input_dir, require_metadata):
+    return _get_single_file_by_suffix(
+        input_dir, "_freyja_metadata.csv", require_file=require_metadata)
+
+
+def _load_and_merge_freyja_results_and_metadata(
+        input_dir, require_metadata=False):
+    freyja_raw_results_fp = get_freyja_results_fp(input_dir)
+    metadata_fp = _get_freyja_metadata_fp(
+        input_dir, require_metadata=require_metadata)
+
+    freyja_raw_results_df = pandas.read_csv(freyja_raw_results_fp, sep="\t")
+    freyja_results_df = freyja_raw_results_df
+    if metadata_fp is not None:
+        metadata_df = pandas.read_csv(metadata_fp)
+        validate_length(freyja_raw_results_df, "raw freyja results",
+                        metadata_df, "freyja metadata")
+
+        freyja_w_dates_df = freyja_raw_results_df.merge(
+            metadata_df, left_on=FREYJA_FNAME_KEY,
+            right_on=METADATA_SAMPLE_KEY, how="outer")
+        validate_length(freyja_w_dates_df, "freyja results/metadata merge",
+                        freyja_raw_results_df, "raw freyja results")
+        # remove the duplicate sample name column
+        freyja_w_dates_df.pop(METADATA_SAMPLE_KEY)
+
+        freyja_results_df = freyja_w_dates_df
+
+    return freyja_results_df
+
+
 def unmunge_lineage_label(a_label):
     result = a_label
     if a_label.endswith(LINEAGE_LABEL_DELIMITER):
@@ -306,10 +353,11 @@ def explode_sample_freyja_results(freyja_results_w_id_df,
 
 
 def explode_and_label_sample_freyja_results(
-        freyja_w_id_df, curr_sample_id, SAMPLE_ID_KEY, labels_df,
+        freyja_w_id_df, curr_sample_id, sample_id_key, labels_df,
         lineage_to_parent_dict, curated_lineages, explode_variants=False):
+
     curr_exploded_df, sample_df = explode_sample_freyja_results(
-        freyja_w_id_df, curr_sample_id, SAMPLE_ID_KEY, explode_variants)
+        freyja_w_id_df, curr_sample_id, sample_id_key, explode_variants)
 
     curr_labeled_df = _map_lineage_and_variant_labels(
         curr_exploded_df, labels_df,
@@ -319,15 +367,13 @@ def explode_and_label_sample_freyja_results(
 
 
 def get_freyja_results_fp(input_dir):
-    freyja_results_fps = glob.glob(f"{input_dir}/*_freyja_aggregated.tsv")
-    validate_length(freyja_results_fps, "'*_freyja_aggregated.tsv' glob", [1])
-    return freyja_results_fps[0]
+    return _get_single_file_by_suffix(input_dir, FREYJA_RESULTS_FNAME_SUFFIX)
 
 
-def load_inputs_from_input_dir(labels_to_aggregate_fp, input_dir):
+def load_inputs_from_input_dir(labels_to_aggregate_fp, input_dir,
+                               require_metadata=False):
     lineages_yaml_fp = f"{input_dir}/lineages.yml"
     curated_lineages_json_fp = f"{input_dir}/curated_lineages.json"
-    freyja_results_fp = get_freyja_results_fp(input_dir)
 
     labels_to_aggregate_df = pandas.read_csv(labels_to_aggregate_fp)
     with open(lineages_yaml_fp) as lineages_fh:
@@ -335,10 +381,32 @@ def load_inputs_from_input_dir(labels_to_aggregate_fp, input_dir):
 
     with open(curated_lineages_json_fp) as json_fh:
         curated_lineages = json.load(json_fh)
-    freyja_ww_df = pandas.read_csv(freyja_results_fp, sep="\t")
+    freyja_ww_df = _load_and_merge_freyja_results_and_metadata(
+        input_dir, require_metadata=require_metadata)
 
     return (labels_to_aggregate_df, lineage_to_parents_dict,
             curated_lineages, freyja_ww_df)
+
+
+def extract_qc_failing_freyja_results(freyja_results_df, fails_fp=None):
+    qc_fails_mask = freyja_results_df[COVERAGE_KEY] < MIN_ACCEPTABLE_COVERAGE
+    qc_fails_indices = freyja_results_df[qc_fails_mask].index
+    # get failing records
+    qc_fails_df = freyja_results_df.loc[qc_fails_indices, :]
+    # now actually drop any failing records
+    freyja_results_df.drop(qc_fails_indices, inplace=True)
+
+    if fails_fp is not None:
+        qc_fails_df.to_csv(fails_fp, sep="\t", index=False)
+
+    return freyja_results_df, qc_fails_df
+
+
+def get_ref_dir():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.join(curr_dir, os.pardir)
+    ref_dir = os.path.abspath(os.path.join(parent_dir, "reference_files"))
+    return ref_dir
 
 
 def download_inputs(summary_s3_url, output_dir, urls_fp=None):
@@ -375,18 +443,12 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
     curated_json_s3_url = summary_s3_url.replace(summary_name+"/", curated_json_fname)
     curated_json_local_fp = output_path / curated_json_fname
     cmd1 = f"aws s3 cp {curated_json_s3_url} {curated_json_local_fp}"
-    cmd2 = f"aws s3 cp {summary_s3_url} {output_dir} --recursive --exclude \"*\" --include \"*_freyja_aggregated.tsv\""
+    cmd2 = f"aws s3 cp {summary_s3_url} {output_dir} --recursive " \
+           f"--exclude \"*\" --include \"*{FREYJA_RESULTS_FNAME_SUFFIX}\""
 
     import subprocess
     subprocess.run(cmd1, shell=True)
     subprocess.run(cmd2, shell=True)
-
-
-def get_ref_dir():
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.join(curr_dir, os.pardir)
-    ref_dir = os.path.abspath(os.path.join(parent_dir, "reference_files"))
-    return ref_dir
 
 
 def freyja_download():
@@ -399,7 +461,3 @@ def freyja_download():
         urls_fp = os.join(ref_dir, "inputs_url.txt")
 
     download_inputs(summary_s3_url, output_dir, urls_fp)
-
-
-if __name__ == '__main__':
-    freyja_download()

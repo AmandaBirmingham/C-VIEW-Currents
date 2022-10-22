@@ -15,7 +15,10 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'generate_search_wastewater_lineages_report=src.generate_search_wastewater_lineages_report:main',
+            'make_search_reports=src.generate_search_wastewater_lineages_report:generate_reports',
+            'make_freyja_metadata=src.generate_search_wastewater_lineages_report:generate_freyja_metadata',
+            'make_campus_reports=src.generate_campus_wastewater_lineage_report:generate_reports',
+            'get_bam_urls=src.generate_campus_wastewater_lineage_report:get_bam_urls',
             'freyja_download=src.freyja_processing_utils:freyja_download'
         ]}
 )

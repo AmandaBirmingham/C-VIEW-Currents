@@ -34,9 +34,6 @@ class GenerateDashboardReportTest(FileTestCase):
         "sequencing_tech": ["Illumina", "Illumina"],
     }
 
-    manhole_id_dict = {"SamplerID": ["AS127", "AS061"],
-                       "ManholeID": ["C7M011", "C3M150"]}
-
     lineage_to_parent_dict = {'A': None,
                               'B': 'A',
                               'B.1': 'B',
@@ -127,18 +124,16 @@ class GenerateDashboardReportTest(FileTestCase):
             'sample_id': ['5.15.22.AS061' for x in range(8)] + ['5.11.22.AS127' for x in range(8)],
             'sample_collection_datetime': ['2022-05-15 00:00:00+00:00' for x in range(8)] + ['2022-05-11 00:00:00+00:00' for x in range(8)],
             'sample_sequencing_datetime': ['2022-05-27 00:00:00+00:00' for x in range(16)],
-            'sequencing_tech': ['Illumina' for x in range(16)],
-            'manhole_id': ['C3M150' for x in range(8)] + ['C7M011' for x in range(8)]
+            'sequencing_tech': ['Illumina' for x in range(16)]
         }
 
         freyja_df = pandas.DataFrame(freyja_dict)
         cview_df = pandas.DataFrame(self.cview_dict)
-        manhole_id_df = pandas.DataFrame(self.manhole_id_dict)
         labels_df = pandas.DataFrame(self.labels_dict)
         expected_out_df = pandas.DataFrame(expected_out_dict)
 
         output_df = generate_dashboard_report_df(
-            cview_df, freyja_df, manhole_id_df, labels_df,
+            cview_df, freyja_df, labels_df,
             self.lineage_to_parent_dict, self.curated_lineages,
             "2022-07-11_22-32-05", "2022-07-25_16-54-16")
         pandas.testing.assert_frame_equal(expected_out_df, output_df)
@@ -151,13 +146,11 @@ class GenerateDashboardReportTest(FileTestCase):
             else pandas.DataFrame(self.freyja_dict)
         cview_df = cview_df if cview_df is not None else \
             pandas.DataFrame(self.cview_dict)
-        manhole_id_df = manhole_id_df if manhole_id_df is not None \
-            else pandas.DataFrame(self.manhole_id_dict)
         labels_df = pandas.DataFrame(self.labels_dict)
 
         with self.assertRaisesRegex(ValueError, expected_msg):
             generate_dashboard_report_df(
-            cview_df, freyja_df, manhole_id_df, labels_df,
+            cview_df, freyja_df, labels_df,
             self.lineage_to_parent_dict, self.curated_lineages,
             "2022-07-11_22-32-05", "2022-07-25_16-54-16")
 
@@ -170,52 +163,52 @@ class GenerateDashboardReportTest(FileTestCase):
         self._test_generate_dashboard_report_df_error(
             expected_err_msg, cview_df=cview_df)
 
-    def test_generate_dashboard_report_df_missing_manhole_id_error(self):
-        # cview sample id doesn't match with a manhole id
-        cview_df = pandas.DataFrame(self.cview_dict)
-        # mangle the sample id so the sampler id is None
-        cview_df.loc[0, "sample_id"] = "5.11.22.AA127"
-        expected_err_msg = "1 samples without recognizable sampler " \
-                           "ids have a sample_id not ending in 'UNLABELED'" \
-                           " or 'UNLABELLED'"
-
-        self._test_generate_dashboard_report_df_error(
-            expected_err_msg, cview_df=cview_df)
-
     def test_generate_dashboard_report(self):
         input_label_fp = \
             f"{self.dummy_dir}/dummy_labels_2022-07-11_22-32-05.csv"
-        input_sampler_to_manhole_fp = \
-            f"{self.dummy_dir}/dummy_sampler_to_manhole.csv"
         input_cview_summary_fp = \
             f"{self.dummy_dir}/dummy_cview_summary_report.csv"
         input_freyja_wastewater_dir = self.dummy_dir
 
         expected_dashboard_report_fp = \
             f"{self.dummy_dir}/dummy_campus_ww_lineages_report.csv"
+        expected_freyja_fails_fp = \
+            f"{self.dummy_dir}/dummy_freyja_qc_fails.tsv"
 
         out_dashboard_report_fp = f"{self.test_temp_dir}/" \
                                   f"temp_campus_ww_lineages_report.csv"
+        out_freyja_fails_fp = f"{self.test_temp_dir}/" \
+                              f"temp_freyja_qc_fails.tsv"
 
         arg_list = ["generate_campus_wastewater_lineages_report.py",
-                    input_label_fp, input_sampler_to_manhole_fp,
-                    input_cview_summary_fp, input_freyja_wastewater_dir,
-                    out_dashboard_report_fp]
+                    input_freyja_wastewater_dir, input_cview_summary_fp,
+                    out_dashboard_report_fp, out_freyja_fails_fp,
+                    input_label_fp]
 
-        out_is_file = False
-        out_equal = False
+        out_report_is_file = out_fails_is_file = False
+        out_report_equal = out_fails_equal = False
         output_fp = None
         try:
             output_fp = generate_dashboard_report(arg_list)
 
-            out_is_file = os.path.isfile(output_fp)
-            self.assertTrue(out_is_file)
+            out_fails_is_file = os.path.isfile(out_freyja_fails_fp)
+            self.assertTrue(out_fails_is_file)
 
-            out_equal = filecmp.cmp(output_fp, expected_dashboard_report_fp)
-            self.assertTrue(out_equal)
+            out_fails_equal = filecmp.cmp(
+                out_freyja_fails_fp, expected_freyja_fails_fp)
+            self.assertTrue(out_fails_equal)
+
+            out_report_is_file = os.path.isfile(output_fp)
+            self.assertTrue(out_report_is_file)
+
+            out_report_equal = filecmp.cmp(
+                output_fp, expected_dashboard_report_fp)
+            self.assertTrue(out_report_equal)
         finally:
-            if out_is_file and out_equal:
+            if out_fails_is_file and out_report_is_file and\
+                    out_fails_equal and out_report_equal:
                 try:
+                    os.remove(out_freyja_fails_fp)
                     os.remove(output_fp)
                 except OSError:
                     pass
