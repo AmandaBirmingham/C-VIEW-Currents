@@ -150,9 +150,9 @@ class GenerateDashboardReportTest(FileTestCase):
 
         with self.assertRaisesRegex(ValueError, expected_msg):
             generate_dashboard_report_df(
-            cview_df, freyja_df, labels_df,
-            self.lineage_to_parent_dict, self.curated_lineages,
-            "2022-07-11_22-32-05", "2022-07-25_16-54-16")
+                cview_df, freyja_df, labels_df,
+                self.lineage_to_parent_dict, self.curated_lineages,
+                "2022-07-11_22-32-05", "2022-07-25_16-54-16")
 
     def test_generate_dashboard_report_df_missing_cview_match_error(self):
         # cview doesn't contain a match for all freyja records
