@@ -42,7 +42,9 @@ fi
 S3_BUCKET=$2
 RUN_NAME=$3
 OUTPUT_S3_URLS_FP="$LOCAL_DIR/$RUN_NAME"_s3_urls.txt
-UPLOAD_S3_FOLDER="$S3_BUCKET/$RUN_NAME/$RUN_NAME"_bam
+OUTPUT_SAMPLE_NAMES_FP="$LOCAL_DIR/$RUN_NAME"_samples.txt
+UPLOAD_S3_FOLDER="$S3_BUCKET/$RUN_NAME"
+UPLOAD_S3_BAM_FOLDER="$UPLOAD_S3_FOLDER/$RUN_NAME"_bam
 
 # check local folder
 LOCAL_RUN_DIR=$LOCAL_DIR/$RUN_NAME
@@ -74,10 +76,11 @@ for bam_path in "${BAM_PATHS[@]}" ; do
   # assume sample names don't follow naming convention used by C-VIEW,
   # so munge them into that format for compatibility
   sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
+  echo "$sample_name" >> "$OUTPUT_SAMPLE_NAMES_FP"
 
   sample_fname="$sample_name.$OUT_BAM_SUF"
   local_path="$LOCAL_RUN_DIR/$sample_fname"
-  s3_bam_url="$UPLOAD_S3_FOLDER/$sample_fname"
+  s3_bam_url="$UPLOAD_S3_BAM_FOLDER/$sample_fname"
 
   echo "Downloading: $bam_path to $local_path"
   scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
@@ -90,8 +93,16 @@ done
 #  which looks like
 #  upload: myDir/test1.txt to s3://mybucket/test1.txt
 #  Although would need some massaging, would also be more strictly accurate
+
+# make freyja metadata file
+echo "Generating freyja-compliant metadata file"
+FREYJA_METADATA_FNAME="$RUN_NAME"_freyja_metadata.csv
+FREYJA_METADATA_FP="$LOCAL_DIR/$FREYJA_METADATA_FNAME"
+python ../src/freyja_processing_utils.py "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
+
 echo "Uploading local folder contents to s3"
-aws s3 cp "$LOCAL_RUN_DIR/" "$UPLOAD_S3_FOLDER" --recursive
+aws s3 cp "$FREYJA_METADATA_FP" "$UPLOAD_S3_FOLDER/$FREYJA_METADATA_FNAME"
+aws s3 cp "$LOCAL_RUN_DIR/" "$UPLOAD_S3_BAM_FOLDER" --recursive
 
 echo "Removing local folder: $LOCAL_RUN_DIR"
 rm -rf "$LOCAL_RUN_DIR"

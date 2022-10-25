@@ -397,7 +397,9 @@ def extract_qc_failing_freyja_results(freyja_results_df, fails_fp=None):
     freyja_results_df.drop(qc_fails_indices, inplace=True)
 
     if fails_fp is not None:
-        qc_fails_df.to_csv(fails_fp, sep="\t", index=False)
+        include_header = len(qc_fails_df) != 0
+        qc_fails_df.to_csv(fails_fp, sep="\t",
+                           index=False, header=include_header)
 
     return freyja_results_df, qc_fails_df
 
@@ -452,12 +454,51 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
 
 
 def freyja_download():
-    summary_s3_url = argv[0]
-    output_dir = argv[1]
-    if len(argv) == 3:
-        urls_fp = argv[2]
+    summary_s3_url = argv[1]
+    output_dir = argv[2]
+    if len(argv) == 4:
+        urls_fp = argv[3]
     else:
         ref_dir = get_ref_dir()
-        urls_fp = os.join(ref_dir, "inputs_url.txt")
+        urls_fp = os.path.join(ref_dir, "inputs_urls.txt")
 
     download_inputs(summary_s3_url, output_dir, urls_fp)
+
+
+def generate_freyja_metadata(arg_list):
+    temp_name_key = "temp_name"
+
+    cview_sample_names_fp = arg_list[1]
+    sample_info_fp = arg_list[2]
+    output_metadata_fp = arg_list[3]
+
+    cview_sample_names_df = pandas.read_csv(cview_sample_names_fp, header=None)
+    cview_sample_names_df = cview_sample_names_df.rename(
+        columns={cview_sample_names_df.columns[0]: METADATA_SAMPLE_KEY})
+
+    temp_df = cview_sample_names_df.iloc[:, 0].str.split(
+        "__", expand=True)
+    cview_sample_names_df[temp_name_key] = temp_df.iloc[:, 0]
+
+    sample_info_df = pandas.read_csv(sample_info_fp, header=None)
+    sample_info_df.columns = [temp_name_key, METADATA_DATE_KEY]
+
+    validate_length(cview_sample_names_df, "cview-style sample names",
+                    sample_info_df, "sample info")
+    sample_info_df = sample_info_df.merge(
+        cview_sample_names_df, on=temp_name_key,
+        how="outer", validate="1:1")
+    validate_length(sample_info_df, "sample names/sample info merge",
+                    cview_sample_names_df, "sample names list")
+
+    # output a freyja-style metadata file
+    sample_info_df[METADATA_VIRAL_LOAD_KEY] = ""
+    metadata_df = sample_info_df.loc[:, [METADATA_SAMPLE_KEY,
+                                         METADATA_DATE_KEY,
+                                         METADATA_VIRAL_LOAD_KEY]]
+
+    metadata_df.to_csv(output_metadata_fp, index=False)
+
+
+if __name__ == '__main__':
+    generate_freyja_metadata(argv)
