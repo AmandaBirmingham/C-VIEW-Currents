@@ -9,6 +9,7 @@
 # bash /shared/workspace/software/cview_currents/scripts/run_distributed_freyja.sh /shared/temp/220708_run_bam_s3_urls.txt 220708_run s3://ucsd-rtl-test
 
 CUTILSDIR=/shared/workspace/software/cview_currents
+METADATA_LINE_PREFIX="# metadata:"
 
 if [ "$#" -ne 3 ] ; then
   echo "USAGE: $0 <s3_urls_fp> <run_name> <s3_output_base>"; exit 1
@@ -41,18 +42,24 @@ TRANSFER_SETTINGS_SLURM_JOB_ID=$TRANSFER_SETTINGS_SLURM_JOB_ID:$(sbatch $UPDATE_
 
 TRANSFER_DEPENDENCY_PARAM="--dependency=afterok:${TRANSFER_SETTINGS_SLURM_JOB_ID##* }"
 
+METADATA_S3URL=""
 SAMPLES_JOB_IDS=""
 while read -r SAMPLE_S3URL; do
-  SAMPLE=$(basename "$SAMPLE_S3URL")
-  echo "submitting freyja job for $SAMPLE"
-  SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
-    --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
-              OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
-              RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
-    -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
-    -D /shared/logs \
-    -c 2 \
-    $CUTILSDIR/scripts/run_freyja_on_sample.sh)
+  if [[ "$SAMPLE_S3URL" == "$METADATA_LINE_PREFIX"* ]]; then
+      METADATA_S3URL=${SAMPLE_S3URL/${METADATA_LINE_PREFIX}/}
+      # continue to next line
+  else
+    SAMPLE=$(basename "$SAMPLE_S3URL")
+    echo "submitting freyja job for $SAMPLE"
+    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
+      --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
+                OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
+                RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
+      -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
+      -D /shared/logs \
+      -c 2 \
+      $CUTILSDIR/scripts/run_freyja_on_sample.sh)
+  fi
 done <"$S3_URLS_FP"
 
 SAMPLES_JOB_IDS=$(echo $SAMPLES_JOB_IDS | sed 's/Submitted batch job //g')
@@ -74,6 +81,21 @@ AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \
   $CUTILSDIR/scripts/aggregate_freyja_outputs.sh)
 
 AGGREGATE_DEPENDENCY_PARAM="--dependency=afterok:${AGGREGATE_JOB_ID##* }"
+
+RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch AGGREGATE_DEPENDENCY_PARAM \
+  --export=$(echo "RUN_NAME=$RUN_NAME,\
+            RUN_WORKSPACE=$RUN_WORKSPACE,\
+            TIMESTAMP=$TIMESTAMP, \
+            METADATA_S3URL=$METADATA_S3URL, \
+            AGGREGATE_S3_DIR=$AGG_OUTPUT_S3_DIR, \
+            OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
+  -J aggregate_$RUN_NAME \
+  -D /shared/logs \
+  -c 32 \
+  $CUTILSDIR/scripts/calc_freyja_relgrowthrate.sh)
+echo "submitting freyja relgrowthrate job for $RUN_NAME"
+
+RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
 
 # copy the inputs/settings info to the output s3 directory for tracking
 # (NB: make sure to do this at end, after freyja update has refreshed barcodes/lineages/etc)

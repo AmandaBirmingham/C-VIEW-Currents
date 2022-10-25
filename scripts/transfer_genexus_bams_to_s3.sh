@@ -68,9 +68,9 @@ for folder_id in "${FOLDER_IDENTIFIERS[@]}" ; do
 done
 
 # download BAMs
-RIGHT_CRUFT="$GENEXUS_REPORTS/AssayDev_"
+LEFT_CRUFT="$GENEXUS_REPORTS/AssayDev_"
 for bam_path in "${BAM_PATHS[@]}" ; do
-  temp_name=${bam_path/${RIGHT_CRUFT}/}  # Remove the left part.
+  temp_name=${bam_path/${LEFT_CRUFT}/}  # Remove the left part.
   sample_name=${temp_name%%_SARS-CoV-2Insight*}  # Remove the right part.
 
   # assume sample names don't follow naming convention used by C-VIEW,
@@ -94,14 +94,19 @@ done
 #  upload: myDir/test1.txt to s3://mybucket/test1.txt
 #  Although would need some massaging, would also be more strictly accurate
 
-# make freyja metadata file
+# make freyja metadata file and add to s3 outputs
 echo "Generating freyja-compliant metadata file"
 FREYJA_METADATA_FNAME="$RUN_NAME"_freyja_metadata.csv
 FREYJA_METADATA_FP="$LOCAL_DIR/$FREYJA_METADATA_FNAME"
 python ../src/freyja_processing_utils.py "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
 
+FREYJA_METADATA_S3_URL="$UPLOAD_S3_FOLDER"/"$FREYJA_METADATA_FNAME"
+echo "# metadata:$FREYJA_METADATA_S3_URL" >> "$OUTPUT_S3_URLS_FP"
+
 echo "Uploading local folder contents to s3"
-aws s3 cp "$FREYJA_METADATA_FP" "$UPLOAD_S3_FOLDER/$FREYJA_METADATA_FNAME"
+# upload metadata file to the run folder
+aws s3 cp "$FREYJA_METADATA_FP" "$FREYJA_METADATA_S3_URL"
+# upload all the local bam folder contents to the run's bam folder
 aws s3 cp "$LOCAL_RUN_DIR/" "$UPLOAD_S3_BAM_FOLDER" --recursive
 
 echo "Removing local folder: $LOCAL_RUN_DIR"
