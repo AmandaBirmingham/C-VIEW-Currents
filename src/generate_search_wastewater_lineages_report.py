@@ -102,10 +102,10 @@ def generate_dashboard_report_df(
 
 
 def generate_dashboard_reports(arg_list):
-    input_dir = arg_list[0]
-    output_dir = arg_list[1]
-    if len(arg_list) > 2:
-        labels_fp = arg_list[2]
+    input_dir = arg_list[1]
+    output_dir = arg_list[2]
+    if len(arg_list) > 3:
+        labels_fp = arg_list[3]
     else:
         ref_dir = fpu.get_ref_dir()
         labels_fp = _get_latest_file(ref_dir, "sewage_seq_labels_")
@@ -169,19 +169,6 @@ def _make_fails_fp(freyja_dir, output_dir):
         fpu.FREYJA_RESULTS_FNAME_SUFFIX, "_freyja_qc_fails.tsv")
     fails_fp = pathlib.Path(output_dir) / fails_fname
     return fails_fp
-
-
-def generate_freyja_metadata(arg_list):
-    sample_info_fp = arg_list[0]
-    output_metadata_fp = arg_list[1]
-
-    sample_info_df = pandas.read_csv(sample_info_fp, header=None)
-    sample_info_df.columns = [fpu.METADATA_SAMPLE_KEY, fpu.METADATA_DATE_KEY]
-    sample_info_df[fpu.METADATA_SAMPLE_KEY] = \
-        sample_info_df[fpu.METADATA_SAMPLE_KEY] + ".tsv"
-    sample_info_df[fpu.METADATA_VIRAL_LOAD_KEY] = ""
-
-    sample_info_df.to_csv(output_metadata_fp, index=False)
 
 
 def generate_reports():

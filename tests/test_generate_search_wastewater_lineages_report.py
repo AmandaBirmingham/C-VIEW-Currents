@@ -20,7 +20,8 @@ class GenerateDashboardReportTest(FileTestCase):
 
         # Note: optional last argument 'suppress' suppresses the creation of
         # intermediate exploded per-sample files
-        arg_list = [f"{self.dummy_dir}/dummy_search_inputs",
+        arg_list = ["make_search_reports",
+                    f"{self.dummy_dir}/dummy_search_inputs",
                     self.test_temp_dir, input_label_fp, "suppress"]
 
         freyja_fails_is_file = out_enc_is_file = out_pl_is_file = False
