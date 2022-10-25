@@ -39,7 +39,7 @@ aggregate_freyja_outputs() {
 
   echo "aggregating freyja calls for $RUN_NAME"
   freyja aggregate $WORKSPACE/ --output $WORKSPACE/"$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv --ext demix_tsv
-  echo -e "$SAMPLE\tfreyja demix exit code: $?" >> $WORKSPACE/"$RUN_NAME"_freyja_aggregated.exit.log
+  echo -e "freyja demix exit code: $?" >> $WORKSPACE/"$RUN_NAME"_freyja_aggregated.exit.log
 
   # Gather aggregation error code(s)
   grep -v "exit code: 0" $WORKSPACE/"$RUN_NAME"_freyja_aggregated.exit.log | head -n 1 >> $WORKSPACE/"$RUN_NAME"_freyja_aggregated.error.log
