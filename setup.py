@@ -18,7 +18,7 @@ setup(
             'download_report_inputs=src.freyja_processing_utils:download_inputs',
             'make_freyja_metadata=src.generate_search_wastewater_lineages_report:generate_freyja_metadata',
             'make_search_reports=src.generate_search_wastewater_lineages_report:generate_reports',
-            'make_campus_reports=src.generate_campus_wastewater_lineage_report:generate_reports',
+            'make_campus_reports=src.generate_campus_wastewater_lineages_report:generate_reports',
             'get_cview_bam_urls=src.generate_campus_wastewater_lineage_report:get_bam_urls'
         ]}
 )

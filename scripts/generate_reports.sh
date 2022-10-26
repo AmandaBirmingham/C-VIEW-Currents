@@ -24,10 +24,10 @@ generate_freyja_reports() {
   echo -e "download_report_inputs exit code: $?" >> $WORKSPACE/"$REPORT_NAME"_reports.exit.log
 
    echo "running search dashboard reports for $REPORT_NAME"
-  if [ "$REPORT_TYPE" != "search" ]; then
+  if [ "$REPORT_TYPE" == "search" ]; then
     make_search_reports "$WORKSPACE"/inputs "$WORKSPACE"/outputs suppress
     echo -e "make_search_reports exit code: $?" >> $WORKSPACE/"$REPORT_NAME"_reports.exit.log
-  elif [ "$REPORT_TYPE" != "campus" ]; then
+  elif [ "$REPORT_TYPE" == "campus" ]; then
     make_campus_reports "$WORKSPACE"/inputs "$WORKSPACE"/outputs
     echo -e "make_campus_reports exit code: $?" >> $WORKSPACE/"$REPORT_NAME"_reports.exit.log
   fi
