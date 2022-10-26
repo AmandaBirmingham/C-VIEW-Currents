@@ -96,7 +96,7 @@ if [ "$METADATA_S3URL" != "" ]; then
   RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 
   echo "submitting freyja relgrowthrate job for $RUN_NAME"
-  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch AGGREGATE_DEPENDENCY_PARAM \
+  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
     --export=$(echo "RUN_NAME=$RUN_NAME,\
               RUN_WORKSPACE=$RUN_WORKSPACE,\
               METADATA_S3URL=$METADATA_S3URL, \
