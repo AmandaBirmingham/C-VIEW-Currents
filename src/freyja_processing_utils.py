@@ -411,17 +411,24 @@ def get_ref_dir():
     return ref_dir
 
 
-def download_inputs(summary_s3_url, output_dir, urls_fp=None):
+def _download_inputs(summary_s3_url, output_dir, urls_fp=None):
     def _add_end_backslash(a_str):
         if not a_str.endswith("/"):
             a_str = a_str + "/"
         return a_str
+
+    def _download_url(a_url, output_path):
+        a_filename = pathlib.Path(a_url).name
+        a_local_fp = output_path / a_filename
+        urllib.request.urlretrieve(a_url, a_local_fp)
 
     curated_json_fname = "curated_lineages.json"
     summary_s3_url = _add_end_backslash(summary_s3_url)
     output_dir = _add_end_backslash(output_dir)
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
+
+    # TODO: add copying the input urls file into the output dir
 
     # download all the urls in the input file, if there is one
     urls = []
@@ -432,9 +439,7 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
 
     urls.append(LINEAGE_YML_URL)
     for curr_url in urls:
-        curr_filename = pathlib.Path(curr_url).name
-        curr_local_fp = output_path / curr_filename
-        urllib.request.urlretrieve(curr_url, curr_local_fp)
+        _download_url(curr_url, output_path)
 
     # download the freyja result(s) and the curated_lineages.json from
     # the specified run on S3.
@@ -442,7 +447,8 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
     # don't want to code my AWS credentials into this script and I have already
     # run aws cli's config on my machine to store my credentials there
     summary_name = pathlib.Path(summary_s3_url).name
-    curated_json_s3_url = summary_s3_url.replace(summary_name+"/", curated_json_fname)
+    curated_json_s3_url = summary_s3_url.replace(
+        summary_name + "/", curated_json_fname)
     curated_json_local_fp = output_path / curated_json_fname
     cmd1 = f"aws s3 cp {curated_json_s3_url} {curated_json_local_fp}"
     cmd2 = f"aws s3 cp {summary_s3_url} {output_dir} --recursive " \
@@ -453,7 +459,7 @@ def download_inputs(summary_s3_url, output_dir, urls_fp=None):
     subprocess.run(cmd2, shell=True)
 
 
-def freyja_download():
+def download_inputs():
     summary_s3_url = argv[1]
     output_dir = argv[2]
     if len(argv) == 4:
@@ -462,43 +468,4 @@ def freyja_download():
         ref_dir = get_ref_dir()
         urls_fp = os.path.join(ref_dir, "inputs_urls.txt")
 
-    download_inputs(summary_s3_url, output_dir, urls_fp)
-
-
-def generate_freyja_metadata(arg_list):
-    temp_name_key = "temp_name"
-
-    cview_sample_names_fp = arg_list[1]
-    sample_info_fp = arg_list[2]
-    output_metadata_fp = arg_list[3]
-
-    cview_sample_names_df = pandas.read_csv(cview_sample_names_fp, header=None)
-    cview_sample_names_df = cview_sample_names_df.rename(
-        columns={cview_sample_names_df.columns[0]: METADATA_SAMPLE_KEY})
-
-    temp_df = cview_sample_names_df.iloc[:, 0].str.split(
-        "__", expand=True)
-    cview_sample_names_df[temp_name_key] = temp_df.iloc[:, 0]
-
-    sample_info_df = pandas.read_csv(sample_info_fp, header=None)
-    sample_info_df.columns = [temp_name_key, METADATA_DATE_KEY]
-
-    validate_length(cview_sample_names_df, "cview-style sample names",
-                    sample_info_df, "sample info")
-    sample_info_df = sample_info_df.merge(
-        cview_sample_names_df, on=temp_name_key,
-        how="outer", validate="1:1")
-    validate_length(sample_info_df, "sample names/sample info merge",
-                    cview_sample_names_df, "sample names list")
-
-    # output a freyja-style metadata file
-    sample_info_df[METADATA_VIRAL_LOAD_KEY] = ""
-    metadata_df = sample_info_df.loc[:, [METADATA_SAMPLE_KEY,
-                                         METADATA_DATE_KEY,
-                                         METADATA_VIRAL_LOAD_KEY]]
-
-    metadata_df.to_csv(output_metadata_fp, index=False)
-
-
-if __name__ == '__main__':
-    generate_freyja_metadata(argv)
+    _download_inputs(summary_s3_url, output_dir, urls_fp)

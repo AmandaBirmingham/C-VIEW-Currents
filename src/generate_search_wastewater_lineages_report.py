@@ -171,5 +171,40 @@ def _make_fails_fp(freyja_dir, output_dir):
     return fails_fp
 
 
+def generate_freyja_metadata(arg_list):
+    temp_name_key = "temp_name"
+
+    cview_sample_names_fp = arg_list[1]
+    sample_info_fp = arg_list[2]
+    output_metadata_fp = arg_list[3]
+
+    cview_sample_names_df = pandas.read_csv(cview_sample_names_fp, header=None)
+    cview_sample_names_df = cview_sample_names_df.rename(
+        columns={cview_sample_names_df.columns[0]: fpu.METADATA_SAMPLE_KEY})
+
+    temp_df = cview_sample_names_df.iloc[:, 0].str.split(
+        "__", expand=True)
+    cview_sample_names_df[temp_name_key] = temp_df.iloc[:, 0]
+
+    sample_info_df = pandas.read_csv(sample_info_fp, header=None)
+    sample_info_df.columns = [temp_name_key, fpu.METADATA_DATE_KEY]
+
+    fpu.validate_length(cview_sample_names_df, "cview-style sample names",
+                    sample_info_df, "sample info")
+    sample_info_df = sample_info_df.merge(
+        cview_sample_names_df, on=temp_name_key,
+        how="outer", validate="1:1")
+    fpu.validate_length(sample_info_df, "sample names/sample info merge",
+                    cview_sample_names_df, "sample names list")
+
+    # output a freyja-style metadata file
+    sample_info_df[fpu.METADATA_VIRAL_LOAD_KEY] = ""
+    metadata_df = sample_info_df.loc[:, [fpu.METADATA_SAMPLE_KEY,
+                                         fpu.METADATA_DATE_KEY,
+                                         fpu.METADATA_VIRAL_LOAD_KEY]]
+
+    metadata_df.to_csv(output_metadata_fp, index=False)
+
+
 def generate_reports():
     generate_dashboard_reports(argv)
