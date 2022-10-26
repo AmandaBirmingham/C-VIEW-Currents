@@ -4,7 +4,7 @@
 #   RUN_WORKSPACE
 #   SAMPLES_S3_DIR
 #   RUN_NAME
-#   TIMESTAMP
+#   OUT_AGG_FNAME
 #   OUTPUT_S3_DIR
 
 ANACONDADIR=/shared/workspace/software/anaconda3/bin
@@ -38,7 +38,7 @@ aggregate_freyja_outputs() {
   source $ANACONDADIR/activate freyja-env
 
   echo "aggregating freyja calls for $RUN_NAME"
-  freyja aggregate $WORKSPACE/ --output $WORKSPACE/"$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv --ext demix_tsv
+  freyja aggregate $WORKSPACE/ --output $WORKSPACE/"$OUT_AGG_FNAME" --ext demix_tsv
   echo -e "freyja demix exit code: $?" >> $WORKSPACE/"$RUN_NAME"_freyja_aggregated.exit.log
 
   # Gather aggregation error code(s)
