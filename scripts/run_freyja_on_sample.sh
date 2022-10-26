@@ -7,7 +7,7 @@
 
 IGM_REF_NAME="NC_045512.2"
 GENEXUS_REF_NAME="2019-nCoV"
-REF_DIR=/shared/workspace/software/cview-currents/reference_files
+REF_DIR=/shared/workspace/software/cview_currents/reference_files
 ANACONDADIR=/shared/workspace/software/anaconda3/bin
 
 SAMPLE_FNAME=$(basename "$SAMPLE_S3URL")
