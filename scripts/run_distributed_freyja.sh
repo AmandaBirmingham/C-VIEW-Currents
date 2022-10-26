@@ -91,25 +91,28 @@ AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \
 
 AGGREGATE_DEPENDENCY_PARAM="--dependency=afterok:${AGGREGATE_JOB_ID##* }"
 
-if [ "$METADATA_S3URL" != "" ]; then
-  AGGREGATE_S3URL="$AGG_OUTPUT_S3_DIR"/"$AGG_FNAME"
-  RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
-
-  echo "submitting freyja relgrowthrate job for $RUN_NAME"
-  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
-    --export=$(echo "RUN_NAME=$RUN_NAME,\
-              RUN_WORKSPACE=$RUN_WORKSPACE,\
-              METADATA_S3URL=$METADATA_S3URL, \
-              AGGREGATE_S3URL=$AGGREGATE_S3URL, \
-              OUT_FNAME=$RELGROWTHRATE_FNAME, \
-              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
-    -J growth_$RUN_NAME \
-    -D /shared/logs \
-    -c 32 \
-    $CUTILSDIR/scripts/calc_freyja_relgrowthrate.sh)
-
-    RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+if [[ "$METADATA_S3URL" == "" ]]; then
+  echo "Error: Unable to generate growth rate or report with empty METADATA_S3URL"
+  exit 1
 fi
+
+AGGREGATE_S3URL="$AGG_OUTPUT_S3_DIR"/"$AGG_FNAME"
+RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
+
+echo "submitting freyja relgrowthrate job for $RUN_NAME"
+RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
+  --export=$(echo "RUN_NAME=$RUN_NAME,\
+            RUN_WORKSPACE=$RUN_WORKSPACE,\
+            METADATA_S3URL=$METADATA_S3URL, \
+            AGGREGATE_S3URL=$AGGREGATE_S3URL, \
+            OUT_FNAME=$RELGROWTHRATE_FNAME, \
+            OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
+  -J growth_$RUN_NAME \
+  -D /shared/logs \
+  -c 32 \
+  $CUTILSDIR/scripts/calc_freyja_relgrowthrate.sh)
+
+  RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
 
 echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job
@@ -117,6 +120,7 @@ REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
   --export=$(echo "REPORT_NAME=$REPORT_NAME,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             SUMMARY_S3_DIR=$AGG_OUTPUT_S3_DIR, \
+            METADATA_S3URL=$METADATA_S3URL, \
             REPORT_TYPE=$REPORT_TYPE, \
             OUTPUT_S3_DIR=$REPORT_RUN_S3_DIR" | sed 's/ //g') \
   -J report_$REPORT_NAME \
