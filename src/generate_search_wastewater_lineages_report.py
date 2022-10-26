@@ -198,6 +198,8 @@ def generate_freyja_metadata(arg_list):
                     cview_sample_names_df, "sample names list")
 
     # output a freyja-style metadata file
+    sample_info_df[fpu.METADATA_SAMPLE_KEY] = \
+        sample_info_df[fpu.METADATA_SAMPLE_KEY] + ".tsv"
     sample_info_df[fpu.METADATA_VIRAL_LOAD_KEY] = ""
     metadata_df = sample_info_df.loc[:, [fpu.METADATA_SAMPLE_KEY,
                                          fpu.METADATA_DATE_KEY,
