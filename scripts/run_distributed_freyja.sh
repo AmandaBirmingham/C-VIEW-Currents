@@ -54,7 +54,7 @@ METADATA_S3URL=""
 SAMPLES_JOB_IDS=""
 while read -r SAMPLE_S3URL; do
   if [[ "$SAMPLE_S3URL" == "$METADATA_LINE_PREFIX"* ]]; then
-      METADATA_S3URL=${SAMPLE_S3URL/${METADATA_LINE_PREFIX}/}
+      METADATA_S3URL=${SAMPLE_S3URL/"${METADATA_LINE_PREFIX}"/}
       # continue to next line
   else
     SAMPLE=$(basename "$SAMPLE_S3URL")

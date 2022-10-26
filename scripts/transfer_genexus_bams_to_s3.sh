@@ -70,7 +70,7 @@ done
 # download BAMs
 LEFT_CRUFT="$GENEXUS_REPORTS/AssayDev_"
 for bam_path in "${BAM_PATHS[@]}" ; do
-  temp_name=${bam_path/${LEFT_CRUFT}/}  # Remove the left part.
+  temp_name=${bam_path/"${LEFT_CRUFT}"/}  # Remove the left part.
   sample_name=${temp_name%%_SARS-CoV-2Insight*}  # Remove the right part.
 
   # assume sample names don't follow naming convention used by C-VIEW,
