@@ -1,9 +1,0 @@
-site_location,site_prefix,rollup_label,component_type
-PointLoma,PL,Omicron,variant
-PointLoma,PL,Delta,variant
-PointLoma,PL,BA.5.X,lineage
-PointLoma,PL,BA.1.1.X,lineage
-PointLoma,PL,BA.2.12,lineage
-Encina,ENC,Omicron,variant
-Encina,ENC,BA.5.X,lineage
-Encina,ENC,BA.1.1.X,lineage

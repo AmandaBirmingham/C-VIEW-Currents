@@ -689,24 +689,20 @@ class FreyjaProcessingUtilsTest(FileTestCase):
                 99.14724275]
         }
 
-        labels_fp = f"{self.dummy_dir}/dummy_labels_2022-07-11_22-32-05.csv"
         expected_labels_df = pandas.DataFrame(expected_labels_dict)
         expected_freyja_df = pandas.DataFrame(freyja_dict)
 
         labels_df, l_to_parents_dict, cur_lineages, freyja_df = \
-            load_inputs_from_input_dir(labels_fp, self.dummy_dir)
+            load_inputs_from_input_dir(self.dummy_dir)
         pandas.testing.assert_frame_equal(expected_labels_df, labels_df)
         self.assertDictEqual(self.lineage_to_parent_dict, l_to_parents_dict)
         self.assertEqual(self.curated_lineages, cur_lineages)
         pandas.testing.assert_frame_equal(expected_freyja_df, freyja_df)
 
     def test_load_inputs_from_input_dir_fail_require_metadata(self):
-        labels_fp = f"{self.dummy_dir}/dummy_labels_2022-07-11_22-32-05.csv"
-
         with self.assertRaisesRegex(
                 ValueError, "Found 0 records in '<wildcard>_freyja_metadata.csv' glob but expected 1"):
-            load_inputs_from_input_dir(
-                labels_fp, self.dummy_dir, require_metadata=True)
+            load_inputs_from_input_dir(self.dummy_dir, require_metadata=True)
 
     # TODO: add test below
     # def test_extract_qc_failing_freyja_results(self):

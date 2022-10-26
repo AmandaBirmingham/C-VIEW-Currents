@@ -116,16 +116,14 @@ def _explode_ww_results(
     return output_df
 
 
-def _get_report_path(freyja_wastewater_fp, output_fp=None):
-    if output_fp is None:
-        ww_path = pathlib.Path(freyja_wastewater_fp)
-        curr_datetime = datetime.now()
-        curr_datetime_str = curr_datetime.strftime('%Y-%m-%d_%H-%M-%S')
-        fname = f"{ww_path.stem}_campus_dashboard_report_" \
-                f"{curr_datetime_str}.csv"
+def _get_report_path(freyja_wastewater_fp, output_dir):
+    ww_path = pathlib.Path(freyja_wastewater_fp)
+    curr_datetime = datetime.now()
+    curr_datetime_str = curr_datetime.strftime('%Y-%m-%d_%H-%M-%S')
+    fname = f"{ww_path.stem}_campus_dashboard_report_" \
+            f"{curr_datetime_str}.csv"
 
-        output_fp = ww_path.parent / fname
-    # end if output fp wasn't provided
+    output_fp = pathlib.Path(output_dir) / fname
 
     return output_fp
 
@@ -155,24 +153,23 @@ def generate_dashboard_report_df(
 
 def generate_dashboard_report(arg_list):
     freyja_input_dir = arg_list[1]
-    cview_summary_fp = arg_list[2]
-    out_report_fp = out_fails_fp = labels_fp = None
-    if len(arg_list) > 3:
-        out_report_fp = arg_list[3]
-        out_fails_fp = arg_list[4]
-        labels_fp = arg_list[5]
+    output_dir = arg_list[2]
 
+    labels_fp = fpu.get_labels_fp(freyja_input_dir)
     labels_date = _extract_date_from_filename(labels_fp)
     freyja_results_fp = fpu.get_freyja_results_fp(freyja_input_dir)
     freyja_run_date = _extract_date_from_filename(freyja_results_fp)
 
+    cview_summary_fp = fpu.get_single_file_by_suffix(
+        freyja_input_dir, "_summary-report_all.csv")
     cview_summary_df = pandas.read_csv(cview_summary_fp)
 
     labels_to_aggregate_df, lineage_to_parent_dict, \
         curated_lineages, freyja_ww_df = fpu.load_inputs_from_input_dir(
-            labels_fp, freyja_input_dir)
+            freyja_input_dir)
 
     # Apply QC threshold to freyja results, extract and write out failed ones
+    out_fails_fp = fpu.make_fails_fp(freyja_input_dir, output_dir)
     freyja_passing_ww_df, _ = fpu.extract_qc_failing_freyja_results(
         freyja_ww_df, out_fails_fp)
 
@@ -183,17 +180,25 @@ def generate_dashboard_report(arg_list):
         cview_summary_df, freyja_ww_df, search_labels_df,
         lineage_to_parent_dict, curated_lineages, labels_date, freyja_run_date)
 
-    out_report_fp = _get_report_path(freyja_results_fp, out_report_fp)
+    out_report_fp = _get_report_path(freyja_results_fp, output_dir)
     output_df.to_csv(out_report_fp, columns=OUTPUT_COLS, index=False)
     return out_report_fp
 
 
-def extract_bam_urls(args_list):
-    output_suffix = "_rtl_wastewater_highcov_s3_urls.txt"
+def _download_s3_item(item_s3_url, output_dir):
+    output_dir_path = pathlib.Path(output_dir)
+    a_filename = pathlib.Path(item_s3_url).name
+    a_local_fp = output_dir_path / a_filename
 
-    # ignore args_list[1]--that's just "bamurls"
-    cview_summary_fp = args_list[2]
-    output_dir = None if len(args_list) <= 3 else args_list[3]
+    import subprocess
+    cmd1 = f"aws s3 cp {item_s3_url} {a_local_fp}"
+    subprocess.run(cmd1, shell=True)
+
+    return a_local_fp
+
+
+def _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir):
+    output_suffix = "_rtl_wastewater_highcov_s3_urls.txt"
 
     # NB: expects a *-all_summary-report_all.csv cview file
     cview_summary_df = pandas.read_csv(cview_summary_fp)
@@ -207,20 +212,30 @@ def extract_bam_urls(args_list):
     relevant_bam_urls = \
         cview_summary_df.loc[rtl_wastewater_highcov_mask, BAM_S3_KEY]
 
-    if output_dir:
-        output_dir_path = pathlib.Path(output_dir)
-        cview_summary_path = pathlib.Path(cview_summary_fp)
-        output_fname = cview_summary_path.stem + output_suffix
-        output_fp = output_dir_path / output_fname
-    else:
-        output_fp = cview_summary_fp.replace(".csv", output_suffix)
+    output_dir_path = pathlib.Path(output_dir)
+    cview_summary_path = pathlib.Path(cview_summary_fp)
+    output_fname = cview_summary_path.stem + output_suffix
+    output_fp = output_dir_path / output_fname
+
     relevant_bam_urls.sort_values(inplace=True)
+
+    # add cview summary file url as metadata comment
+    metadata_item_series = pandas.Series(
+        [f"{fpu.URL_METADATA_PREFIX}{cview_summary_s3_url}"])
+    relevant_bam_urls = pandas.concat(
+        [relevant_bam_urls, metadata_item_series])
+
     relevant_bam_urls.to_csv(output_fp, index=False, header=False)
     return output_fp
 
 
 def get_bam_urls():
-    extract_bam_urls(argv)
+    cview_summary_s3_url = argv[1]
+    output_dir = argv[2]
+
+    cview_summary_fp = _download_s3_item(cview_summary_s3_url, output_dir)
+
+    _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir)
 
 
 def generate_reports():

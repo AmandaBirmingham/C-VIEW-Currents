@@ -104,11 +104,6 @@ def generate_dashboard_report_df(
 def generate_dashboard_reports(arg_list):
     input_dir = arg_list[1]
     output_dir = arg_list[2]
-    if len(arg_list) > 3:
-        labels_fp = arg_list[3]
-    else:
-        ref_dir = fpu.get_ref_dir()
-        labels_fp = _get_latest_file(ref_dir, "sewage_seq_labels_")
 
     exploded_out_dir = output_dir
     if arg_list[-1] == "suppress":
@@ -119,16 +114,17 @@ def generate_dashboard_reports(arg_list):
 
     labels_to_aggregate_df, lineage_to_parents_dict, \
         curated_lineages, freyja_ww_df = fpu.load_inputs_from_input_dir(
-            labels_fp, input_dir)
+            input_dir)
     # TODO: this should go away once date column names are rationalized
     freyja_ww_df.rename(
         columns={fpu.METADATA_DATE_KEY: DATE_KEY}, inplace=True)
 
     # Apply QC threshold to freyja results, extract and write out failed ones
-    freyja_fails_fp = _make_fails_fp(input_dir, output_dir)
+    freyja_fails_fp = fpu.make_fails_fp(input_dir, output_dir)
     freyja_passing_ww_df, _ = fpu.extract_qc_failing_freyja_results(
         freyja_ww_df, freyja_fails_fp)
 
+    labels_fp = fpu.get_labels_fp(input_dir)
     labels_df = pandas.read_csv(labels_fp)
     output_fps = []
     for curr_location in pandas.unique(labels_df[fpu.SITE_LOCATION_KEY]):
@@ -149,26 +145,6 @@ def generate_dashboard_reports(arg_list):
     # next location
 
     return output_fps
-
-
-def _get_latest_file(dir_path, filename_root=""):
-    dir_path_obj = pathlib.Path(dir_path)
-    latest_fp = None
-    relevant_fps = list(dir_path_obj.glob(f"*{filename_root}*"))
-    if len(relevant_fps) > 0:
-        latest_fp = max(relevant_fps,
-                        key=lambda item: item.stat().st_ctime)
-    return latest_fp
-
-
-def _make_fails_fp(freyja_dir, output_dir):
-    freyja_fp = fpu.get_freyja_results_fp(freyja_dir)
-    freyja_path = pathlib.Path(freyja_fp)
-    freyja_fname = freyja_path.name
-    fails_fname = freyja_fname.replace(
-        fpu.FREYJA_RESULTS_FNAME_SUFFIX, "_freyja_qc_fails.tsv")
-    fails_fp = pathlib.Path(output_dir) / fails_fname
-    return fails_fp
 
 
 def generate_freyja_metadata(arg_list):

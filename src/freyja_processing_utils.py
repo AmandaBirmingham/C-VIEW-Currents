@@ -6,6 +6,7 @@ import glob
 import yaml
 import json
 import os
+import shutil
 
 VARIANTS_LIST_KEY = "summarized"
 LINEAGES_LIST_KEY = "lineages"
@@ -14,6 +15,7 @@ COVERAGE_KEY = "coverage"
 MIN_ACCEPTABLE_COVERAGE = 60
 FREYJA_FNAME_KEY = "Unnamed: 0"
 FREYJA_RESULTS_FNAME_SUFFIX = "_freyja_aggregated.tsv"
+LABEL_FNAME_SUFFIX = "_report_labels.csv"
 COMPONENT_KEY = "component"
 COMPONENT_FRAC_KEY = "component_fraction"
 COMPONENT_TYPE_KEY = "component_type"
@@ -34,6 +36,7 @@ DEALIASED_MUNGED_LINEAGE_LABEL_KEY = "dealiased_munged_lineage_label"
 METADATA_SAMPLE_KEY = "Sample"
 METADATA_DATE_KEY = "sample_collection_datetime"
 METADATA_VIRAL_LOAD_KEY = "viral_load"
+URL_METADATA_PREFIX = "# metadata:"
 
 
 def _munge_lineage_label(a_label):
@@ -236,7 +239,7 @@ def _map_lineage_and_variant_labels(
     return temp_df
 
 
-def _get_single_file_by_suffix(input_dir, suffix, require_file=True):
+def get_single_file_by_suffix(input_dir, suffix, require_file=True):
     result = None
     found_fps = glob.glob(f"{input_dir}/*{suffix}")
     if require_file:
@@ -247,7 +250,7 @@ def _get_single_file_by_suffix(input_dir, suffix, require_file=True):
 
 
 def _get_freyja_metadata_fp(input_dir, require_metadata):
-    return _get_single_file_by_suffix(
+    return get_single_file_by_suffix(
         input_dir, "_freyja_metadata.csv", require_file=require_metadata)
 
 
@@ -367,20 +370,35 @@ def explode_and_label_sample_freyja_results(
 
 
 def get_freyja_results_fp(input_dir):
-    return _get_single_file_by_suffix(input_dir, FREYJA_RESULTS_FNAME_SUFFIX)
+    return get_single_file_by_suffix(input_dir, FREYJA_RESULTS_FNAME_SUFFIX)
 
 
-def load_inputs_from_input_dir(labels_to_aggregate_fp, input_dir,
-                               require_metadata=False):
+def get_labels_fp(input_dir):
+    return get_single_file_by_suffix(input_dir, LABEL_FNAME_SUFFIX)
+
+
+def make_fails_fp(freyja_dir, output_dir):
+    freyja_fp = get_freyja_results_fp(freyja_dir)
+    freyja_path = pathlib.Path(freyja_fp)
+    freyja_fname = freyja_path.name
+    fails_fname = freyja_fname.replace(
+        FREYJA_RESULTS_FNAME_SUFFIX, "_freyja_qc_fails.tsv")
+    fails_fp = pathlib.Path(output_dir) / fails_fname
+    return fails_fp
+
+
+def load_inputs_from_input_dir(input_dir, require_metadata=False):
     lineages_yaml_fp = f"{input_dir}/lineages.yml"
     curated_lineages_json_fp = f"{input_dir}/curated_lineages.json"
 
+    labels_to_aggregate_fp = get_labels_fp(input_dir)
     labels_to_aggregate_df = pandas.read_csv(labels_to_aggregate_fp)
+
     with open(lineages_yaml_fp) as lineages_fh:
         lineage_to_parents_dict = _get_lineage_to_parents_dict(lineages_fh)
-
     with open(curated_lineages_json_fp) as json_fh:
         curated_lineages = json.load(json_fh)
+
     freyja_ww_df = _load_and_merge_freyja_results_and_metadata(
         input_dir, require_metadata=require_metadata)
 
@@ -411,16 +429,27 @@ def get_ref_dir():
     return ref_dir
 
 
-def _download_inputs(summary_s3_url, output_dir, urls_fp=None):
+def _get_latest_file(dir_path, filename_root=""):
+    dir_path_obj = pathlib.Path(dir_path)
+    latest_fp = None
+    relevant_fps = list(dir_path_obj.glob(f"*{filename_root}*"))
+    if len(relevant_fps) > 0:
+        latest_fp = max(relevant_fps,
+                        key=lambda item: item.stat().st_ctime)
+    return latest_fp
+
+
+def _download_inputs(summary_s3_url, output_dir, labels_fp, urls_fp=None):
     def _add_end_backslash(a_str):
         if not a_str.endswith("/"):
             a_str = a_str + "/"
         return a_str
 
-    def _download_url(a_url, output_path):
+    def _download_url(a_url, output_dir):
         a_filename = pathlib.Path(a_url).name
-        a_local_fp = output_path / a_filename
+        a_local_fp = output_dir / a_filename
         urllib.request.urlretrieve(a_url, a_local_fp)
+        return a_local_fp
 
     curated_json_fname = "curated_lineages.json"
     summary_s3_url = _add_end_backslash(summary_s3_url)
@@ -428,11 +457,15 @@ def _download_inputs(summary_s3_url, output_dir, urls_fp=None):
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # TODO: add copying the input urls file into the output dir
+    # copy the labels file into the output dir
+    shutil.copy(labels_fp, output_dir)
 
     # download all the urls in the input file, if there is one
     urls = []
     if urls_fp:
+        # copy the input urls file into the output dir
+        shutil.copy(urls_fp, output_dir)
+
         with open(urls_fp) as urls_fh:
             # make sure to remove linebreaks ...
             urls = [x.strip() for x in urls_fh.readlines()]
@@ -462,10 +495,17 @@ def _download_inputs(summary_s3_url, output_dir, urls_fp=None):
 def download_inputs():
     summary_s3_url = argv[1]
     output_dir = argv[2]
-    if len(argv) == 4:
-        urls_fp = argv[3]
+
+    if len(argv) > 3:
+        labels_fp = argv[3]
+    else:
+        ref_dir = get_ref_dir()
+        labels_fp = _get_latest_file(ref_dir, LABEL_FNAME_SUFFIX)
+
+    if len(argv) > 4:
+        urls_fp = argv[4]
     else:
         ref_dir = get_ref_dir()
         urls_fp = os.path.join(ref_dir, "inputs_urls.txt")
 
-    _download_inputs(summary_s3_url, output_dir, urls_fp)
+    _download_inputs(summary_s3_url, output_dir, labels_fp, urls_fp)

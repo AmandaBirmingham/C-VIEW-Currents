@@ -99,20 +99,22 @@ fi
 AGGREGATE_S3URL="$AGG_OUTPUT_S3_DIR"/"$AGG_FNAME"
 RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 
-echo "submitting freyja relgrowthrate job for $RUN_NAME"
-RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
-  --export=$(echo "RUN_NAME=$RUN_NAME,\
-            RUN_WORKSPACE=$RUN_WORKSPACE,\
-            METADATA_S3URL=$METADATA_S3URL, \
-            AGGREGATE_S3URL=$AGGREGATE_S3URL, \
-            OUT_FNAME=$RELGROWTHRATE_FNAME, \
-            OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
-  -J growth_$RUN_NAME \
-  -D /shared/logs \
-  -c 32 \
-  $CUTILSDIR/scripts/calc_freyja_relgrowthrate.sh)
+if [[ "$REPORT_TYPE" == search ]]; then
+  echo "submitting freyja relgrowthrate job for $RUN_NAME"
+  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
+    --export=$(echo "RUN_NAME=$RUN_NAME,\
+              RUN_WORKSPACE=$RUN_WORKSPACE,\
+              METADATA_S3URL=$METADATA_S3URL, \
+              AGGREGATE_S3URL=$AGGREGATE_S3URL, \
+              OUT_FNAME=$RELGROWTHRATE_FNAME, \
+              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
+    -J growth_$RUN_NAME \
+    -D /shared/logs \
+    -c 32 \
+    $CUTILSDIR/scripts/calc_freyja_relgrowthrate.sh)
 
-  RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+    RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+fi
 
 echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job

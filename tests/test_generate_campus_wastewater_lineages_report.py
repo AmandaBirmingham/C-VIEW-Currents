@@ -3,7 +3,7 @@ import filecmp
 import pandas
 from tests.filetestcase import FileTestCase
 from src.generate_campus_wastewater_lineages_report import \
-    generate_dashboard_report_df, generate_dashboard_report, extract_bam_urls
+    generate_dashboard_report_df, generate_dashboard_report, _extract_bam_urls
 
 
 class GenerateDashboardReportTest(FileTestCase):
@@ -164,26 +164,17 @@ class GenerateDashboardReportTest(FileTestCase):
             expected_err_msg, cview_df=cview_df)
 
     def test_generate_dashboard_report(self):
-        input_label_fp = \
-            f"{self.dummy_dir}/dummy_labels_2022-07-11_22-32-05.csv"
-        input_cview_summary_fp = \
-            f"{self.dummy_dir}/dummy_cview_summary_report.csv"
-        input_freyja_wastewater_dir = self.dummy_dir
-
         expected_dashboard_report_fp = \
             f"{self.dummy_dir}/dummy_campus_ww_lineages_report.csv"
         expected_freyja_fails_fp = \
             f"{self.dummy_dir}/dummy_freyja_qc_fails.tsv"
 
-        out_dashboard_report_fp = f"{self.test_temp_dir}/" \
-                                  f"temp_campus_ww_lineages_report.csv"
         out_freyja_fails_fp = f"{self.test_temp_dir}/" \
-                              f"temp_freyja_qc_fails.tsv"
+                              f"dummy_campus_2022-07-25_16-54-16_" \
+                              f"freyja_qc_fails.tsv"
 
         arg_list = ["generate_campus_wastewater_lineages_report.py",
-                    input_freyja_wastewater_dir, input_cview_summary_fp,
-                    out_dashboard_report_fp, out_freyja_fails_fp,
-                    input_label_fp]
+                    self.dummy_dir, self.test_temp_dir]
 
         out_report_is_file = out_fails_is_file = False
         out_report_equal = out_fails_equal = False
@@ -213,22 +204,26 @@ class GenerateDashboardReportTest(FileTestCase):
                 except OSError:
                     pass
 
-    def test_extract_bam_urls(self):
+    def test__extract_bam_urls(self):
         input_cview_summary_fp = \
-            f"{self.dummy_dir}/dummy_cview_summary_report.csv"
+            f"{self.dummy_dir}/dummy_cview_summary-report_all.csv"
 
         expected_urls_fp = \
             f"{self.dummy_dir}/dummy_cview_summary_report_rtl_" \
             f"wastewater_highcov_s3_urls.txt"
 
-        arg_list = ["generate_campus_wastewater_lineages_report.py", "bamurls",
-                    input_cview_summary_fp, self.test_temp_dir]
+        arg_list = [input_cview_summary_fp,
+                    "s3://dummy/dummy_cview_summary_all.csv",
+                    self.test_temp_dir]
 
         out_is_file = False
         out_equal = False
         output_fp = None
         try:
-            output_fp = extract_bam_urls(arg_list)
+            output_fp = _extract_bam_urls(
+                input_cview_summary_fp,
+                "s3://dummy/dummy_cview_summary_all.csv",
+                self.test_temp_dir)
 
             out_is_file = os.path.isfile(output_fp)
             self.assertTrue(out_is_file)

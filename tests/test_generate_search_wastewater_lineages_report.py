@@ -7,8 +7,6 @@ from src.generate_search_wastewater_lineages_report import \
 
 class GenerateDashboardReportTest(FileTestCase):
     def test_generate_dashboard_reports(self):
-        input_label_fp = \
-            f"{self.dummy_dir}/dummy_labels_for_search.csv"
         dummy_out_dir = f"{self.dummy_dir}/dummy_search_outputs"
         expected_freyja_fails_fp = f"{dummy_out_dir}/" \
                                    f"dummy_genexus_freyja_qc_fails.tsv"
@@ -22,7 +20,7 @@ class GenerateDashboardReportTest(FileTestCase):
         # intermediate exploded per-sample files
         arg_list = ["make_search_reports",
                     f"{self.dummy_dir}/dummy_search_inputs",
-                    self.test_temp_dir, input_label_fp, "suppress"]
+                    self.test_temp_dir, "suppress"]
 
         freyja_fails_is_file = out_enc_is_file = out_pl_is_file = False
         freyja_fails_equal = out_enc_equal = out_pl_equal = False
