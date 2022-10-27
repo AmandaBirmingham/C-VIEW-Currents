@@ -17,6 +17,8 @@ mkdir -p $WORKSPACE
 
 generate_freyja_reports() {
   mkdir "$WORKSPACE"/inputs
+  mkdir "$WORKSPACE"/outputs
+
   aws s3 cp $METADATA_S3URL "$WORKSPACE"/inputs
 
   # Activate conda env cview_currents
