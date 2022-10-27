@@ -122,6 +122,7 @@ class GenerateDashboardReportTest(FileTestCase):
             'freyja_run_date': ['2022-07-25_16-54-16' for x in range(16)],
             'sequenced_pool_component_id': ['SEARCH-91606__E0003116__I07__220527_A01535_0137_BHY5VWDSX3__002' for x in range(8)] + ['SEARCH-91626__E0003116__M08__220527_A01535_0137_BHY5VWDSX3__002' for x in range(8)],
             'sample_id': ['5.15.22.AS061' for x in range(8)] + ['5.11.22.AS127' for x in range(8)],
+            'sampler_id': ['AS061' for x in range(8)] + ['AS127' for x in range(8)],
             'sample_collection_datetime': ['2022-05-15 00:00:00+00:00' for x in range(8)] + ['2022-05-11 00:00:00+00:00' for x in range(8)],
             'sample_sequencing_datetime': ['2022-05-27 00:00:00+00:00' for x in range(16)],
             'sequencing_tech': ['Illumina' for x in range(16)]

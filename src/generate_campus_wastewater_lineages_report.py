@@ -10,7 +10,6 @@ SAMPLE_ID_KEY = "sample_id"
 COLLECT_DATE_KEY = "sample_collection_datetime"
 RUN_DATE_KEY = "sample_sequencing_datetime"
 SEQUENCING_TECH_KEY = "sequencing_tech"
-GOOGLE_SAMPLER_ID_KEY = "SamplerID"
 SAMPLER_ID_KEY = "sampler_id"
 LINEAGE_KEY = fpu.LINEAGE_COMP_TYPE
 LINEAGE_FRAC_KEY = f"{LINEAGE_KEY}_fraction"
@@ -23,10 +22,13 @@ SPECIMEN_TYPE_KEY = "specimen_type"
 WASTEWATER_SPECIMEN_TYPE_VAL = "wastewater"
 TENX_COVG_KEY = "10_x_pc"
 
-OUTPUT_COLS = [SEQ_POOL_COMP_ID, SAMPLE_ID_KEY, COLLECT_DATE_KEY,
-               RUN_DATE_KEY, SEQUENCING_TECH_KEY, FREYJA_DATE_KEY,
-               LABELS_DATE_KEY, LINEAGE_KEY, LINEAGE_FRAC_KEY,
-               fpu.LINEAGE_LABEL_KEY, fpu.VARIANT_LABEL_KEY]
+SAMPLE_COLS = [SEQ_POOL_COMP_ID, SAMPLE_ID_KEY, SAMPLER_ID_KEY,
+               COLLECT_DATE_KEY, RUN_DATE_KEY, SEQUENCING_TECH_KEY]
+
+OUTPUT_COLS = SAMPLE_COLS.copy()
+OUTPUT_COLS.extend(
+    [FREYJA_DATE_KEY, LABELS_DATE_KEY, LINEAGE_KEY, LINEAGE_FRAC_KEY,
+     fpu.LINEAGE_LABEL_KEY, fpu.VARIANT_LABEL_KEY])
 
 
 def _merge_wastewater_to_cview_summary(
@@ -70,8 +72,7 @@ def _make_exploded_df_w_extras(exploded_df, seq_pool_df,
     result_df[LABELS_DATE_KEY] = labels_date
     result_df[FREYJA_DATE_KEY] = freyja_run_date
 
-    col_keys_to_include = [SEQ_POOL_COMP_ID, SAMPLE_ID_KEY, COLLECT_DATE_KEY,
-                           RUN_DATE_KEY, SEQUENCING_TECH_KEY]
+    col_keys_to_include = SAMPLE_COLS
     for curr_col_key in col_keys_to_include:
         # iloc[0] because there's only one row in the seq_pool_df and we
         # want the (single) value for the specified column in the first
@@ -144,8 +145,9 @@ def generate_dashboard_report_df(
 
     temp_df = _merge_wastewater_to_cview_summary(
         cview_summary_df, freyja_ww_df)
+    temp_df_2 = _make_wastewater_w_id_df(temp_df)
     output_df = _explode_ww_results(
-        temp_df, labels_df, lineage_to_parent_dict, curated_lineages,
+        temp_df_2, labels_df, lineage_to_parent_dict, curated_lineages,
         labels_date, freyja_run_date)
 
     return output_df
