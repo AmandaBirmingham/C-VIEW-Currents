@@ -42,21 +42,21 @@ update_repos() {
     exit 1
   fi
 
-  # Upload freyja metadata and aggregate/relgrowthrate results to Josh's repo
-  cd $REPOS_DIR/SD-Freyja-Outputs || exit
-  git checkout main
-  git pull
-
-  mv $tmp_dir/*.csv $REPOS_DIR/SD-Freyja-Outputs
-  mv $tmp_dir/*.tsv $REPOS_DIR/SD-Freyja-Outputs
-
-  # commit/push changes direct to josh repo
-  git commit -a -m "$RUN_NAME"
-  git push
+#  # Upload freyja metadata and aggregate/relgrowthrate results to Josh's repo
+#  cd $REPOS_DIR/SD-Freyja-Outputs || exit
+#  git checkout main
+#  git pull
+#
+#  mv $tmp_dir/*.csv $REPOS_DIR/SD-Freyja-Outputs
+#  mv $tmp_dir/*.tsv $REPOS_DIR/SD-Freyja-Outputs
+#
+#  # commit/push changes direct to josh repo
+#  git commit -a -m "$RUN_NAME"
+#  git push
 
   # Upload report files to local fork and then make PR for andersen lab repo;
   # start by pulling down the updated report files
-  aws s3 cp REPORT_RUN_S3_DIR/outputs/ $tmp_dir/ \
+  aws s3 cp $REPORT_RUN_S3_DIR/outputs/ $tmp_dir/ \
   --quiet \
   --recursive \
   --include "*.csv"
@@ -200,4 +200,17 @@ fi
 # (NB: make sure to do this at end, after freyja update has refreshed barcodes/lineages/etc)
 aws s3 cp $S3_URLS_FP $OUTPUT_S3_DIR/s3_urls.txt
 
-# update_repos
+tmp_dir=$(mktemp -d -t cview-currents-XXXXXXXXXX)
+echo "Select run data stored to temporary dir $tmp_dir"
+echo "When finished examining data, run"
+echo "rm -rf $tmp_dir"
+
+NEW_SCRIPT_FP=$tmp_dir/"$REPORT_NAME"_update_repos.sh
+cp template_update_repos.sh "$NEW_SCRIPT_FP"
+sed -i "s/TMP_DIR/$tmp_dir/" "$NEW_SCRIPT_FP"
+sed -i "s/SUMMARY_S3_DIR/$SUMMARY_S3_DIR/" "$NEW_SCRIPT_FP"
+sed -i "s/REPORT_RUN_S3_DIR/$REPORT_RUN_S3_DIR/" "$NEW_SCRIPT_FP"
+sed -i "s/RUN_NAME/$RUN_NAME/" "$NEW_SCRIPT_FP"
+sed -i "s/REPOS_DIR/$REPOS_DIR/" "$NEW_SCRIPT_FP"
+
+echo "view $NEW_SCRIPT_FP"
