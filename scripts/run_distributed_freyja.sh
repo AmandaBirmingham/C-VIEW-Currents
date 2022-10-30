@@ -203,17 +203,17 @@ RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 tmp_dir=$(mktemp -d -t cview-currents-XXXXXXXXXX)
 echo "Select run data stored to temporary dir $tmp_dir"
 echo "When finished examining data, run"
-echo "rm -rf $tmp_dir"
+echo "   rm -rf $tmp_dir"
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 NEW_SCRIPT_FP=$tmp_dir/"$REPORT_NAME"_update_repos.sh
 cp "$SCRIPT_DIR"/template_update_repos.sh "$NEW_SCRIPT_FP"
 # NB: use | instead of / as sed command delimiter since some of the replaced
 # values contain /
-sed -i "s|TMP_DIR|$tmp_dir|" "$NEW_SCRIPT_FP"
-sed -i "s|SUMMARY_S3_DIR|$SUMMARY_S3_DIR|" "$NEW_SCRIPT_FP"
-sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|" "$NEW_SCRIPT_FP"
-sed -i "s|RUN_NAME|$RUN_NAME|" "$NEW_SCRIPT_FP"
-sed -i "s|REPOS_DIR|$REPOS_DIR|" "$NEW_SCRIPT_FP"
+sed -i "s|TMP_DIR|$tmp_dir|g" "$NEW_SCRIPT_FP"
+sed -i "s|SUMMARY_S3_DIR|$AGG_OUTPUT_S3_DIR|g" "$NEW_SCRIPT_FP"
+sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|g" "$NEW_SCRIPT_FP"
+sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
+sed -i "s|REPOS_DIR|$REPOS_DIR|g" "$NEW_SCRIPT_FP"
 
 echo "view $NEW_SCRIPT_FP"
