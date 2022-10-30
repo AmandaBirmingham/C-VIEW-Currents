@@ -29,6 +29,9 @@ generate_freyja_reports() {
   download_report_inputs "$SUMMARY_S3_DIR" "$WORKSPACE"/inputs
   echo -e "download_report_inputs exit code: $?" >> $WORKSPACE/"$REPORT_NAME"_reports.exit.log
 
+  # TODO: add download of all *.error.log  files in $SUMMARY_S3_DIR
+  #  to ensure this should go ahead?
+
    echo "running search dashboard reports for $REPORT_NAME"
   if [ "$REPORT_TYPE" == "search" ]; then
     make_search_reports "$WORKSPACE"/inputs "$WORKSPACE"/outputs

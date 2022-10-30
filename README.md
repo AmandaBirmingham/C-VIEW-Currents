@@ -10,13 +10,33 @@ lineages prevalent in mixed-input samples like wastewater.
 1. [Overview](#Overview)
 2. [Installing the Pipeline](#Installing-the-Pipeline)
 3. [Creating a Cluster](#Creating-a-Cluster)
-4. [Configuring the Pipeline for Genexus Access](Configuring-the-Pipeline-for-Genexus-Access)
+4. [Configuring the Pipeline for Genexus Access](#Configuring-the-Pipeline-for-Genexus-Access)
 5. [Running the Pipeline](#Running-the-Pipeline)
 
 
 ## Overview
 
-TODO
+C-VIEW Currents runs freyja on specified input bam files and uses these to 
+generate output reports. 
+
+*Results structure:*
+
+* <s3_output_dir> (e.g., `s3://ucsd-rtl-test/freyja/`)
+    * <run_name> (e.g., `221020_WW`)
+      * <run_name>_results (e.g., `221020_WW_results`)
+        * <analysis_timestamp> (e.g., `2022-10-26_23-03-12`): analysis input files
+          * <run_name>_summary (e.g., `221020_WW_summary`)
+            * <run_name>_<analysis_timestamp>_freyja_aggregated.tsv (e.g. `221020_WW_2022-10-26_23-03-12_freyja_aggregated.tsv`): `aggregate` results for all samples in run
+            * <run_name>_freyja_aggregated.error.log (e.g. `221020_WW_freyja_aggregated.error.log`): log of errors from `aggregate` run; zero bytes if it succeeded
+            * [Optional] <run_name>_<analysis_timestamp>_freyja_aggregated.tsv (e.g., `221020_WW_2022-10-26_23-03-12_freyja_rel_growth_rates.csv`): `relgrowthrate` results for all samples in run, if called
+            * [Optional] <run_name>_freyja_relgrowthrate.error.log (e.g., `221020_WW_freyja_relgrowthrate.error.log`): log of errors from `relgrowthrate` run, if called; zero bytes if it was called and succeeded
+          * <run_name>_samples (e.g., `221020_WW_samples`)
+            * <a_sample_name> (e.g., `10.20.22.SB19.R1__NA__NA__221020_WW__00X`): `demix` intermediates and results for a sample
+    * reports
+      * <report_timestamp>_ <run_name>_<report_type> (e.g., `2022-10-26_23-03-12_221020_WW_search`)
+        * <report_timestamp>_ <run_name>_<report_type>_reports.error.log (e.g., `2022-10-26_23-03-12_221020_WW_search_reports.error.log`): log of errors from report generation; zero bytes if it succeeded
+        * inputs: inputs to report generation, including original versions of repo files
+        * outputs: outputs of report generation, including modified versions of repo files
 
 ## Installing the Pipeline
 
@@ -55,6 +75,14 @@ If a fresh installation *is* required, take the following steps:
 
 
 ## Creating a Cluster
+
+Before beginning, note that setting up a new cluster requires the following information:
+* An AWS user with S3 permissions, with known access key and secret access key
+* A Github account with known user name and email,
+  * Having contributor access to 
+    * https://github.com/AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego
+    * https://github.com/joshuailevy/SD-Freyja-Outputs
+  * Attached to an ssh key, with known public and private keys
 
 The pipeline is designed to run on a version 3 or later AWS ParallelCluster. 
 Begin by ensuring that ParallelCluster is installed on your local machine; if it
@@ -130,55 +158,88 @@ having to use its public IPv4 DNS, one can run
 
 which fills in the cluster IP address and username automatically.
 
-From the head node, run `aws configure` to set up the head node with credentials for accessing the 
-necessary AWS S3 resources.
+Finally, once logged into the head node of the cluster, perform these cluster-specific set-up steps:
+
+1. Activate the `cview_currents` environment
+   1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents`
+2. Configure `aws cli` access
+   1. Find the chosen AWS access key and secret access key
+   2. Run `aws configure` to set up the head node with these credentials so it can access the 
+   necessary AWS S3 resources
+3. Configure `git` check-in information
+   1. Run `git config --global --edit` to edit the config doc; then
+   2. Set the user name and email for the chosen github account, uncomment those lines, and resave
+4. Configure Github ssh access
+   1. Get the RSA key-pair (both public and private) for github user's ssh key
+   2. Copy the key-pair into `/home/ubuntu/.ssh/<keyname>`
+   3. Add the public key to the ssh-agent
+      1. If desired, first ensure that the ssh-agent is active by running `eval "$(ssh-agent -s)"` and seeing it returns an agent pid
+      2. Run `ssh-add /home/ubuntu/.ssh/<keyname>`
+   4. Validate ssh access to github is working
+      1. Run `ssh -T git@github.com`
+      2. Confirm the addition of github.com to the list of known hosts
+      3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
+5. Configure `gh cli` access
+   2. Run `gh auth login`
+   3. Choose `SSH` as the protocol
+   4. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
+   5. Title the key `<keyname>`
 
 ## Configuring the Pipeline for Genexus Access
 
 Much of the data run through C-VIEW Currents comes from the Genexus instrument. 
-This machine is accessed via an RSA key-pair, with the public key being placed on
-the instrument and the private key placed on the C-VIEW Currents head node.
+This machine is accessed via an RSA key-pair with the public key being placed on
+the instrument and the private key placed on the C-VIEW Currents head node. 
+*Note* that this key-pair is *distinct from* the Github access 
+keypair used during new cluster set-up.
 
 To configure automated Genexus access:
 
-   1. Contact the personnel in charge of the Genexus instrument
+   1. If you have not been provided with a Genexus access key-pair, create your own RSA key-pair
+   2. Contact the personnel in charge of the Genexus instrument
       1. Ask them for the username and IP address of the Genexus instrument
       2. Ask them for the URL, login, and password for the Genexus instrument's web portal
-      3. Provide them with your RSA public key for placement on the instrument
-   2. SSH onto the C-VIEW Currents head node and
-      1. Copy your RSA private key into the `~/genexus/id_rsa` folder
+      3. If you have not been provided with a Genexus access key-pair, provide them with your RSA public key (created in step 1) for placement on the instrument
+   3. SSH onto the C-VIEW Currents cluster head node and
+      1. Copy the RSA key-pair into a known location (such as a folder named `~/genexus/`)
       2. Find the two `transfer_genexus_bams_*` scripts in `/shared/workflow/software/cview_currents/scripts`
       3. For each script, set the `GENEXUS_USERNAME` and `GENEXUS_IP` variables to the values received in configuration step 1.1
+      4. Set the `GENEXUS_RSA_FP` variable to the path to the RSA private key
+         1. The default value is `~/genexus/id_rsa`
       
-## Running the Pipeline
+## Running the SEARCH Pipeline
 
 The pipeline is run from the head node of the cluster, via the following steps:
 
-1. Load the data onto S3 (for Genexus data only)
+1. Load the data onto S3
    1. Log onto the Genexus instrument's web portal
    2. Capture the name of the latest run (e.g., `221013_WW`) and the sample names included in it (e.g., `10.11.22.ENCOCT11.R2`, `10.13.22.PLOCT09.R2`, etc)
-   3. On the cluster head node, create a one-column, no-header text file containing the sample names for this run
-      1. For example, run `nano /shared/runfiles/221013_WW_samples.txt` and paste in the sample names
+   3. On the cluster head node, construct a two-column, comma-delimited, no-header text file containing the sample names for this run followed by their collection date
+      1. For example, run `nano /shared/runfiles/221013_WW_samples.txt` and paste in the sample names and dates
 
 ```
 # Example:
+
 nano /shared/runfiles/221013_WW_samples.txt
 # then paste the following into the text editor and save:
-10.11.22.ENCOCT06.R2
-10.11.22.ENCOCT11.R2
-10.13.22.PLOCT09.R2
-10.13.22.PLOCT10.R2
-10.13.22.PLOCT11.R2
-10.13.22.PLOCT12.R2
-10.13.22.SBOCT09.R2
-10.13.22.SBOCT10.R2
+
+10.11.22.ENCOCT06.R2,10/6/22
+10.11.22.ENCOCT11.R2,10/11/22
+10.13.22.PLOCT09.R2,10/9/22
+10.13.22.PLOCT10.R2,10/10/22
+10.13.22.PLOCT11.R2,10/11/22
+10.13.22.PLOCT12.R2,10/12/22
+10.13.22.SBOCT09.R2,10/9/22
+10.13.22.SBOCT10.R2,10/10/22
 ```
 
-   4. Transfer the relevant `.bam` and their associated `.bai` files from the Genexus to S3 by running the `transfer_genexus_bams_to_s3.sh` script with the following positional arguments:
-      1. The local directory in which to temporarily store Genexus files (e.g., `/shared/temp`)
-      2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-all`)
-      3. The run name (e.g., `221013_WW`)
-      4. The file of sample names for this run (e.g., `/shared/runfiles/221013_WW_samples.txt`)
+   4. Transfer the relevant `.bam` and their associated `.bai` files from the Genexus to S3
+      1. Run the `transfer_genexus_bams_to_s3.sh` script with the following positional arguments:
+         1. The local directory in which to temporarily store Genexus files (e.g., `/shared/temp`)
+         2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-all`)
+         3. The run name (e.g., `221013_WW`)
+         4. The file of sample names for this run (e.g., `/shared/runfiles/221013_WW_samples.txt`)
+      2. This step also automatically generates a freyja-format metadata csv and uploads it to the run's S3 directory
 
 ```
 # Example:
@@ -190,9 +251,12 @@ bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-all 221013_WW /shared
 ```
 
 2. Run Freyja
-   1. Prepare a one-column, no-header text file of S3 urls to the bam files to be processed
-      1. NOTE: This file *is created automatically* if the bams were transferred to S3 with using the `transfer_genexus_bams_to_s3.sh` script described above; in this case, it is located in `<local_dir>/<run_name>_s3_urls.txt`
-   
+   1. Prepare a one-column, no-header text file of S3 urls to the bam files to be processed 
+      1. The file must also include a line specifying the S3 url of the metadata-containing file
+         1. For `search` reports, this will be a freyja-format metadata csv
+         2. For `campus` reports, this will be a C-VIEW `*_summary-report_all.csv` 
+      2. NOTE: This file *is created automatically* if the bams were transferred to S3 with using the `transfer_genexus_bams_to_s3.sh` script described above; in this case, it is located in `<local_dir>/<run_name>_s3_urls.txt`
+      
 ```
 # Example: contents of /shared/temp/221013_WW_s3_urls.txt:
 
@@ -210,6 +274,7 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
       2. The run name (e.g., `221013_WW`)
       3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+      4. The report type to generate (either `search` or `campus`)
 
 ```
 # Example:
@@ -217,11 +282,69 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X
 cd /shared/workspace/software/cview_currents/scripts
 # Command format:
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
-bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja
+bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja search
 # If desired, check job status by running:
 squeue
 ```
 
-3. Generate reports
-   1. TODO
 
+## Running the Campus Pipeline
+
+The pipeline is run from the head node of the cluster, via the following steps:
+
+1. Generate a file of relevant bam S3 urls
+   1. Capture the S3 url of the C-VIEW `*_summary-report_all.csv` to search for inputs
+   2. Run `get_cview_bam_urls` with the following positional arguments:
+      1. The C-VIEW report S3 URL captured above (e.g., `s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv`)
+      2. The local directory in which the output file should be placed (e.g., `/shared/temp`)
+
+```
+# Example:
+
+conda activate cview_currents
+# if the above gives the error `conda: command not found`, run
+source /shared/workspace/software/anaconda3/bin/activate 
+# then rerun the conda activate command
+
+# Command format:
+# get_cview_bam_urls  <cview_report_s3_url> <local_dir>
+get_cview_bam_urls s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv /shared/temp
+```
+
+   3. Locate the output file, which will be named with the prefix of the `*_summary-report_all.csv` input file and with the suffix `_rtl_wastewater_highcov_s3_urls.txt` 
+      1. Example:
+         1. Input: C-VIEW report `2022-08-10_01-07-42-all_summary-report_all.csv`
+         2. Output: bam S3 url file `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`
+      2. Note that this file contains one bam S3 url per line, plus one additional metadata line holding the S3 url of the C-VIEW report
+         1. The metadata line is prefixed with `# metadata:`
+
+```
+# Example: contents of /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt:
+
+s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_results/2022-06-08_23-12-15_pe/220527_A01535_0137_BHY5VWDSX3_samples/SEARCH-91768__E0003116__K17__220527_A01535_0137_BHY5VWDSX3__002/SEARCH-91768__E0003116__K17__220527_A01535_0137_BHY5VWDSX3__002.trimmed.sorted.bam
+s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_results/2022-06-08_23-12-15_pe/220527_A01535_0137_BHY5VWDSX3_samples/SEARCH-91770__E0003116__M17__220527_A01535_0137_BHY5VWDSX3__002/SEARCH-91770__E0003116__M17__220527_A01535_0137_BHY5VWDSX3__002.trimmed.sorted.bam
+s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_results/2022-06-08_23-12-15_pe/220527_A01535_0137_BHY5VWDSX3_samples/SEARCH-91776__E0003116__C18__220527_A01535_0137_BHY5VWDSX3__002/SEARCH-91776__E0003116__C18__220527_A01535_0137_BHY5VWDSX3__002.trimmed.sorted.bam
+# metadata:s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv
+```      
+
+
+2. Run Freyja and generate a report
+   2. Run the `run_distributed_freyja.sh` script with the following positional arguments:
+      1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`)
+      2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+      4. The report type `campus`
+   3. Locate the results
+      1. The results of the freyja processing will be with the input S3 directory, in a folder named with the run name
+         1. The per-sample freyja results are in the 
+
+```
+# Example:
+
+cd /shared/workspace/software/cview_currents/scripts
+# Command format:
+# bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
+bash run_distributed_freyja.sh /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt 2022-08-10_01-07-42-all_rtl_wastewater_highcov s3://ucsd-all/freyja campus
+# If desired, check job status by running:
+squeue
+```
