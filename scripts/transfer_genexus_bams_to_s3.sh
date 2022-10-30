@@ -47,6 +47,10 @@ OUTPUT_SAMPLE_NAMES_FP="$LOCAL_DIR/$RUN_NAME"_samples.txt
 UPLOAD_S3_FOLDER="$S3_BUCKET/$RUN_NAME"
 UPLOAD_S3_BAM_FOLDER="$UPLOAD_S3_FOLDER/$RUN_NAME"_bam
 
+# empty any previous versions of the output files that were created
+: > "$OUTPUT_S3_URLS_FP"
+: > "$OUTPUT_SAMPLE_NAMES_FP"
+
 # check local folder
 LOCAL_RUN_DIR=$LOCAL_DIR/$RUN_NAME
 if [ -d "$LOCAL_RUN_DIR" ] ; then
