@@ -98,7 +98,7 @@ done
 echo "Generating freyja-compliant metadata file"
 FREYJA_METADATA_FNAME="$RUN_NAME"_freyja_metadata.csv
 FREYJA_METADATA_FP="$LOCAL_DIR/$FREYJA_METADATA_FNAME"
-python ../src/freyja_processing_utils.py "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
+make_freyja_metadata "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
 
 FREYJA_METADATA_S3_URL="$UPLOAD_S3_FOLDER"/"$FREYJA_METADATA_FNAME"
 echo "# metadata:$FREYJA_METADATA_S3_URL" >> "$OUTPUT_S3_URLS_FP"
