@@ -184,5 +184,9 @@ def generate_freyja_metadata(arg_list):
     metadata_df.to_csv(output_metadata_fp, index=False)
 
 
+def make_freyja_metadata():
+    generate_freyja_metadata(argv)
+
+
 def generate_reports():
     generate_dashboard_reports(argv)
