@@ -174,7 +174,6 @@ REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
   -J report_$REPORT_NAME \
   -D /shared/logs \
   -c 32 \
-  --wait \
   $CVIEWCURRENTS_DIR/scripts/generate_reports.sh)
 
 AGGREGATE_S3URL="$AGG_OUTPUT_S3_DIR"/"$AGG_FNAME"
@@ -192,7 +191,6 @@ if [[ "$REPORT_TYPE" == search ]]; then
     -J growth_$RUN_NAME \
     -D /shared/logs \
     -c 32 \
-    --wait \
     $CVIEWCURRENTS_DIR/scripts/calc_freyja_relgrowthrate.sh)
 
     RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
@@ -202,4 +200,4 @@ fi
 # (NB: make sure to do this at end, after freyja update has refreshed barcodes/lineages/etc)
 aws s3 cp $S3_URLS_FP $OUTPUT_S3_DIR/s3_urls.txt
 
-update_repos
+# update_repos
