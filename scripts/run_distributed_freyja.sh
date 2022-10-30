@@ -208,10 +208,12 @@ echo "rm -rf $tmp_dir"
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 NEW_SCRIPT_FP=$tmp_dir/"$REPORT_NAME"_update_repos.sh
 cp "$SCRIPT_DIR"/template_update_repos.sh "$NEW_SCRIPT_FP"
-sed -i "s/TMP_DIR/$tmp_dir/" "$NEW_SCRIPT_FP"
-sed -i "s/SUMMARY_S3_DIR/$SUMMARY_S3_DIR/" "$NEW_SCRIPT_FP"
-sed -i "s/REPORT_RUN_S3_DIR/$REPORT_RUN_S3_DIR/" "$NEW_SCRIPT_FP"
-sed -i "s/RUN_NAME/$RUN_NAME/" "$NEW_SCRIPT_FP"
-sed -i "s/REPOS_DIR/$REPOS_DIR/" "$NEW_SCRIPT_FP"
+# NB: use | instead of / as sed command delimiter since some of the replaced
+# values contain /
+sed -i "s|TMP_DIR|$tmp_dir|" "$NEW_SCRIPT_FP"
+sed -i "s|SUMMARY_S3_DIR|$SUMMARY_S3_DIR|" "$NEW_SCRIPT_FP"
+sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|" "$NEW_SCRIPT_FP"
+sed -i "s|RUN_NAME|$RUN_NAME|" "$NEW_SCRIPT_FP"
+sed -i "s|REPOS_DIR|$REPOS_DIR|" "$NEW_SCRIPT_FP"
 
 echo "view $NEW_SCRIPT_FP"
