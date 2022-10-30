@@ -25,6 +25,7 @@ GENEXUS_REPORTS='/serverdata/results/analysis/output/reports'
 GENEXUS_BAM='merged.bam.ptrim.bam'
 GENEXUS_RSA_FP=~/genexus/id_rsa
 OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'
+ANACONDADIR=/shared/workspace/software/anaconda3/bin
 
 # check usage
 if [ "$#" -ne 4 ] ; then
@@ -98,7 +99,10 @@ done
 echo "Generating freyja-compliant metadata file"
 FREYJA_METADATA_FNAME="$RUN_NAME"_freyja_metadata.csv
 FREYJA_METADATA_FP="$LOCAL_DIR/$FREYJA_METADATA_FNAME"
+
+source $ANACONDADIR/activate cview_currents
 make_freyja_metadata "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
+source $ANACONDADIR/bin/deactivate
 
 FREYJA_METADATA_S3_URL="$UPLOAD_S3_FOLDER"/"$FREYJA_METADATA_FNAME"
 echo "# metadata:$FREYJA_METADATA_S3_URL" >> "$OUTPUT_S3_URLS_FP"
