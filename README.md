@@ -25,9 +25,7 @@ campus pipeline, the output report file is uploaded to the S3 bucket monitored
 by the campus dashboard.
 
 In both cases, full intermediate and results files are stored on S3 with the 
-following folder-/file-naming structure
-
-*Results structure:*
+following folder-/file-naming structure:
 
 * <s3_output_dir> (e.g., `s3://ucsd-rtl-test/freyja/`)
     * <run_name> (e.g., `221020_WW`)
@@ -91,25 +89,24 @@ Before beginning, note that setting up a new cluster requires the following info
     * https://github.com/AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego
     * https://github.com/joshuailevy/SD-Freyja-Outputs
   * Attached to an ssh key, with known public and private keys
+  
+To create a new cluster:
 
-The pipeline is designed to run on a version 3 or later AWS ParallelCluster. 
-Begin by ensuring that ParallelCluster is installed on your local machine; if it
+1. Ensure that version 3.2 or later AWS ParallelCluster is installed on your local machine; if it
 is not, take these steps:
-
-1. Set up a `conda` environment and and install ParallelCluster 
-   1. Run `conda create --name parallelcluster3 python=3`
-   2. Run `conda activate parallelcluster3`
-   3. Run `python3 -m pip install --upgrade aws-parallelcluster`
-2. In the `parallelcluster3` environment, install Node Version Manager and Node.js, which are (apparently) required by AWS Cloud Development Kit (CDK)
-   1. Run `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash`
-   2. Run `chmod ug+x ~/.nvm/nvm.sh`
-   3. Run `source ~/.nvm/nvm.sh`
-   4. Run `nvm install --lts`
-   5. Check your install by running `node --version` and `pcluster version`
-
-Next, ensure you have a pem file registered with AWS and that you have run `aws configure`
-locally to set up AWS command line access from your local machine.  Then 
-prepare a cluster configuration yaml file using the below template:
+   1. Set up a `conda` environment and and install ParallelCluster 
+      1. Run `conda create --name parallelcluster3 python=3`
+      2. Run `conda activate parallelcluster3`
+      3. Run `python3 -m pip install --upgrade aws-parallelcluster`
+   2. In the `parallelcluster3` environment, install Node Version Manager and Node.js, which are (apparently) required by AWS Cloud Development Kit (CDK)
+      1. Run `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash`
+      2. Run `chmod ug+x ~/.nvm/nvm.sh`
+      3. Run `source ~/.nvm/nvm.sh`
+      4. Run `nvm install --lts`
+      5. Check your install by running `node --version` and `pcluster version`
+2. Ensure you have, locally, a pem file registered with AWS
+3. Ensure that you have run `aws configure` locally to set up AWS command line access from your local machine
+4. Prepare a cluster configuration yaml file using the below template:
 
 ```
 Region: us-west-2
@@ -147,7 +144,10 @@ Scheduling:
           InstanceType: r5d.24xlarge
 ```
 
-To create a new cluster from the command line, run
+5. Create a new cluster from the command line by running `pcluster create-cluster` as shown below 
+   1. If you experience an error referencing Node.js, you may need to once again
+   run `source ~/.nvm/nvm.sh` to ensure it is accessible from your shell. 
+   2. The cluster creation progress can be monitored from the `CloudFormation`->`Stacks` section of the AWS Console.
 
 ```
 pcluster create-cluster \
@@ -155,49 +155,42 @@ pcluster create-cluster \
     --cluster-configuration <your-config-file-name>.yaml
 ```
 
-(If you experience an error referencing Node.js, you may need to once again
-run `source ~/.nvm/nvm.sh` to ensure it is accessible from your shell.)  The 
-cluster creation progress can be monitored from the `CloudFormation`->`Stacks` section of the AWS Console.
+6. Once the cluster is successfully created, log in to the head node. 
+   1. To avoid having to use its public IPv4 DNS, one can run `pcluster ssh` as shown below, which fills in the cluster IP address and username automatically.
 
-Once the cluster is successfully created, log in to the head node.  To avoid 
-having to use its public IPv4 DNS, one can run
+```pcluster ssh --cluster-name <your_cluster_name> -i /path/to/keyfile.pem```
 
-`pcluster ssh --cluster-name <your_cluster_name> -i /path/to/keyfile.pem`
-
-which fills in the cluster IP address and username automatically.
-
-Finally, once logged into the head node of the cluster, perform these cluster-specific set-up steps:
-
-1. Activate the `cview_currents` environment
-   1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents`
-2. Configure `aws cli` access
-   1. Find the chosen AWS access key and secret access key
-   2. Run `aws configure` to set up the head node with these credentials so it can access the 
-   necessary AWS S3 resources
-3. Configure `git` check-in information
-   1. Run `git config --global --edit` to edit the config doc; then
-   2. Set the user name and email for the chosen github account, uncomment those lines, and resave
-4. Configure Github ssh access
-   1. Get the RSA key-pair (both public and private) for github user's ssh key
-   2. Copy the key-pair into `/home/ubuntu/.ssh/<keyname>`
-   3. Add the public key to the ssh-agent
-      1. If desired, first ensure that the ssh-agent is active by running `eval "$(ssh-agent -s)"` and seeing it returns an agent pid
-      2. Run `ssh-add /home/ubuntu/.ssh/<keyname>`
-   4. Validate ssh access to github is working
-      1. Run `ssh -T git@github.com`
-      2. Confirm the addition of github.com to the list of known hosts
-      3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
-5. Configure `gh cli` access
-   2. Run `gh auth login`
-   3. Choose `SSH` as the protocol
-   4. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
-   5. Title the key `<keyname>`
-6. Clone the SEARCH repos (note that this must come AFTER step 4)
-   1. Run `cd /shared/workspace/software`
-   2. Run `git clone git@github.com:joshuailevy/SD-Freyja-Outputs.git` to clone the (private) repo for the raw results
-   3. Run `git clone git@github.com:AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego.git` to clone the (public) fork of the Andersen lab repo for dashboard inputs
-   4. Run `cd SARS-CoV-2_WasteWater_San-Diego`
-   5. Run `git remote add upstream https://github.com/andersen-lab/SARS-CoV-2_WasteWater_San-Diego.git` to add the Andersen lab repo as an upstream to the fork repo
+7. On the head node of the cluster, perform cluster-specific set-up
+   1. Activate the `cview_currents` environment
+      1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents`
+   2. Configure `aws cli` access
+      1. Find the chosen AWS access key and secret access key
+      2. Run `aws configure` to set up the head node with these credentials so it can access the 
+      necessary AWS S3 resources
+   3. Configure `git` check-in information
+      1. Run `git config --global --edit` to edit the config doc; then
+      2. Set the user name and email for the chosen github account, uncomment those lines, and resave
+   4. Configure Github ssh access
+      1. Get the RSA key-pair (both public and private) for github user's ssh key
+      2. Copy the key-pair into `/home/ubuntu/.ssh/<keyname>`
+      3. Add the public key to the ssh-agent
+         1. If desired, first ensure that the ssh-agent is active by running `eval "$(ssh-agent -s)"` and seeing it returns an agent pid
+         2. Run `ssh-add /home/ubuntu/.ssh/<keyname>`
+      4. Validate ssh access to github is working
+         1. Run `ssh -T git@github.com`
+         2. Confirm the addition of github.com to the list of known hosts
+         3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
+   5. Configure `gh cli` access
+      2. Run `gh auth login`
+      3. Choose `SSH` as the protocol
+      4. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
+      5. Title the key `<keyname>`
+   6. Clone the SEARCH repos (note that this must come AFTER configuring Github ssh access)
+      1. Run `cd /shared/workspace/software`
+      2. Run `git clone git@github.com:joshuailevy/SD-Freyja-Outputs.git` to clone the (private) repo for the raw results
+      3. Run `git clone git@github.com:AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego.git` to clone the (public) fork of the Andersen lab repo for dashboard inputs
+      4. Run `cd SARS-CoV-2_WasteWater_San-Diego`
+      5. Run `git remote add upstream https://github.com/andersen-lab/SARS-CoV-2_WasteWater_San-Diego.git` to add the Andersen lab repo as an upstream to the fork repo
 
 ## Configuring the Pipeline for Genexus Access
 
