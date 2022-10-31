@@ -35,13 +35,6 @@ if [[ ! "$REPORT_TYPE" =~ ^(search|campus)$ ]]; then
   exit 1
 fi
 
-echo "Did you remember to run"
-echo "  bash scripts/update_freyja.sh"
-echo "before this?  If not, cancel these jobs with"
-echo '  scancel -u $USER'  #NB: single quotes bc don't WANT $USER to expand
-echo "and update freyja before continuing!"
-echo ""  # spacer line
-
 cd $CVIEWCURRENTS_DIR || exit 1
 # see CVIEW show_version.sh for full description of this command
 VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | tr ' ' '_' | tr '\t' '_' | sed -z 's/\n/./g;s/.$/\n/')
@@ -50,6 +43,9 @@ cd "$CURR_DIR" || exit 1
 # upload the current freyja data files to the output dir
 aws s3 cp $FREYJA_DATA_DIR/usher_barcodes.csv "$OUTPUT_S3_DIR"/usher_barcodes.csv
 aws s3 cp $FREYJA_DATA_DIR/curated_lineages.json "$OUTPUT_S3_DIR"/curated_lineages.json
+
+# copy the inputs/settings info to the output s3 directory for tracking
+aws s3 cp "$S3_URLS_FP" "$OUTPUT_S3_DIR/s3_urls.txt"
 
 METADATA_S3URL=""
 SAMPLES_JOB_IDS=""
@@ -63,7 +59,7 @@ while read -r SAMPLE_S3URL; do
     SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch "$TRANSFER_DEPENDENCY_PARAM" \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
-                VERSION_INFO=$VERSION_INFO,\
+                VERSION_INFO="$VERSION_INFO",\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
       -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
       -D /shared/logs \
@@ -83,7 +79,7 @@ echo "submitting freyja aggregate job for $SAMPLES_OUTPUT_S3_DIR"
 AGG_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv
 AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch "$SAMPLES_DEPENDENCY_PARAM" \
   --export=$(echo "RUN_NAME=$RUN_NAME,\
-            VERSION_INFO=$VERSION_INFO,\
+            VERSION_INFO="$VERSION_INFO",\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             OUT_AGG_FNAME=$AGG_FNAME, \
             SAMPLES_S3_DIR=$SAMPLES_OUTPUT_S3_DIR, \
@@ -104,7 +100,7 @@ echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job
 REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
   --export=$(echo "REPORT_NAME=$REPORT_NAME,\
-            VERSION_INFO=$VERSION_INFO,\
+            VERSION_INFO="$VERSION_INFO",\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             SUMMARY_S3_DIR=$AGG_OUTPUT_S3_DIR, \
             METADATA_S3URL=$METADATA_S3URL, \
@@ -123,7 +119,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   echo "submitting freyja relgrowthrate job for $RUN_NAME"
   RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
     --export=$(echo "RUN_NAME=$RUN_NAME,\
-              VERSION_INFO=$VERSION_INFO,\
+              VERSION_INFO="$VERSION_INFO",\
               RUN_WORKSPACE=$RUN_WORKSPACE,\
               METADATA_S3URL=$METADATA_S3URL, \
               AGGREGATE_S3URL=$AGGREGATE_S3URL, \
@@ -134,7 +130,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
     -c 32 \
     $CVIEWCURRENTS_DIR/scripts/calc_freyja_relgrowthrate.sh)
 
-    # RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+  # RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
 
   # Upload the results to the SEARCH-related Github repos;
   # Do this here rather than in a job because it changes files
@@ -152,6 +148,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
   sed -i "s|REPOS_DIR|$REPOS_DIR|g" "$NEW_SCRIPT_FP"
 
+  echo ""
   echo "Check on job progress by running:"
   echo "  squeue"
   echo "When the queue is empty, view the customized repo upload script:"
@@ -162,6 +159,10 @@ if [[ "$REPORT_TYPE" == search ]]; then
   echo "   rm -rf $TMP_DIR"
 fi
 
-# copy the inputs/settings info to the output s3 directory for tracking
-# (NB: make sure to do this at end, after freyja update has refreshed barcodes/lineages/etc)
-aws s3 cp "$S3_URLS_FP" "$OUTPUT_S3_DIR/s3_urls.txt"
+echo ""
+echo "REMINDER: Did you remember to run"
+echo "  bash scripts/update_freyja.sh"
+echo "before this?  If not, cancel these jobs with"
+echo '  scancel -u $USER'  #NB: single quotes bc don't WANT $USER to expand
+echo "and update freyja before continuing!"
+echo ""  # spacer line
