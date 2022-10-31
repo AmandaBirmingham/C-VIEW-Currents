@@ -41,7 +41,6 @@ VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | 
 cd "$CURR_DIR" || exit 1
 
 # TODO: remove debugging
-VERSION_INFO="unknown"
 echo "$VERSION_INFO"
 
 # upload the current freyja data files to the output dir
