@@ -66,6 +66,7 @@ while read -r SAMPLE_S3URL; do
                 VERSION_INFO="$VERSION_INFO",\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g')
     echo "$TEMP_VAR"
+    echo "$CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh"
 
     echo "submitting freyja job for $SAMPLE"
     SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch "$TRANSFER_DEPENDENCY_PARAM" \
@@ -78,7 +79,7 @@ while read -r SAMPLE_S3URL; do
       -c 2 \
       $CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh)
 
-    # TODO: remove debug exis
+    # TODO: remove debug exit
     exit 1
   fi
 done <"$S3_URLS_FP"
