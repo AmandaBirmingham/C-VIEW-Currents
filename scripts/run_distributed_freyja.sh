@@ -68,9 +68,6 @@ while read -r SAMPLE_S3URL; do
       -c 2 \
       $CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh)
   fi
-
-  # TODO remove debug exit
-  exit 1
 done <"$S3_URLS_FP"
 
 SAMPLES_JOB_IDS=$(echo "$SAMPLES_JOB_IDS" | sed 's/Submitted batch job //g')
