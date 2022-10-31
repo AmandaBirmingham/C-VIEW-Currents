@@ -75,9 +75,7 @@ source $ANACONDADIR/bin/deactivate
 # ------- Install C-VIEW Currents -------
 git clone https://github.com/AmandaBirmingham/C-VIEW-Currents.git $SOFTWAREDIR/cview_currents
 
-conda create -n cview_currents pandas pyyaml
+conda create -n cview_currents pandas pyyaml gh
 conda activate cview_currents
 
 pip install -e $SOFTWAREDIR/cview_currents
-
-

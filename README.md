@@ -11,13 +11,21 @@ lineages prevalent in mixed-input samples like wastewater.
 2. [Installing the Pipeline](#Installing-the-Pipeline)
 3. [Creating a Cluster](#Creating-a-Cluster)
 4. [Configuring the Pipeline for Genexus Access](#Configuring-the-Pipeline-for-Genexus-Access)
-5. [Running the Pipeline](#Running-the-Pipeline)
+5. [Running the SEARCH Pipeline](#Running-the-SEARCH-Pipeline)
+6. [Running the Campus Pipeline](#Running-the-Campus-Pipeline)
 
 
 ## Overview
 
-C-VIEW Currents runs freyja on specified input bam files and uses these to 
-generate output reports. 
+C-VIEW Currents runs freyja on specified input bam files and collates the results
+into reports formatted for use by either the [SEARCH dashboard](https://searchcovid.info/dashboards/wastewater-surveillance/)
+or the UCSD campus dashboard.  For the SEARCH pipeline, various results are
+committed to Github repositories powering the SEARCH dashboard, while for the 
+campus pipeline, the output report file is uploaded to the S3 bucket monitored 
+by the campus dashboard.
+
+In both cases, full intermediate and results files are stored on S3 with the 
+following folder-/file-naming structure
 
 *Results structure:*
 
@@ -184,6 +192,12 @@ Finally, once logged into the head node of the cluster, perform these cluster-sp
    3. Choose `SSH` as the protocol
    4. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
    5. Title the key `<keyname>`
+6. Clone the SEARCH repos (note that this must come AFTER step 4)
+   1. Run `cd /shared/workspace/software`
+   2. Run `git clone git@github.com:joshuailevy/SD-Freyja-Outputs.git` to clone the (private) repo for the raw results
+   3. Run `git clone git@github.com:AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego.git` to clone the (public) fork of the Andersen lab repo for dashboard inputs
+   4. Run `cd SARS-CoV-2_WasteWater_San-Diego`
+   5. Run `git remote add upstream https://github.com/andersen-lab/SARS-CoV-2_WasteWater_San-Diego.git` to add the Andersen lab repo as an upstream to the fork repo
 
 ## Configuring the Pipeline for Genexus Access
 
@@ -209,7 +223,10 @@ To configure automated Genexus access:
       
 ## Running the SEARCH Pipeline
 
-The pipeline is run from the head node of the cluster, via the following steps:
+Before beginning, ensure that the actions in the above 
+[Configuring the Pipeline for Genexus Access](#Configuring-the-Pipeline-for-Genexus-Access) 
+section have been completed.  The pipeline is run from the head node of the 
+cluster, via the following steps:
 
 1. Load the data onto S3
    1. Log onto the Genexus instrument's web portal
@@ -233,13 +250,13 @@ nano /shared/runfiles/221013_WW_samples.txt
 10.13.22.SBOCT10.R2,10/10/22
 ```
 
-   4. Transfer the relevant `.bam` and their associated `.bai` files from the Genexus to S3
-      1. Run the `transfer_genexus_bams_to_s3.sh` script with the following positional arguments:
-         1. The local directory in which to temporarily store Genexus files (e.g., `/shared/temp`)
-         2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-all`)
-         3. The run name (e.g., `221013_WW`)
-         4. The file of sample names for this run (e.g., `/shared/runfiles/221013_WW_samples.txt`)
-      2. This step also automatically generates a freyja-format metadata csv and uploads it to the run's S3 directory
+2. Transfer the relevant `.bam` and their associated `.bai` files from the Genexus to S3
+   1. Run the `transfer_genexus_bams_to_s3.sh` script with the following positional arguments:
+      1. The local directory in which to temporarily store Genexus files (e.g., `/shared/temp`)
+      2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-all`)
+      3. The run name (e.g., `221013_WW`)
+      4. The file of sample names for this run (e.g., `/shared/runfiles/221013_WW_samples.txt`)
+   2. This step also automatically generates a freyja-format metadata csv and uploads it to the run's S3 directory
 
 ```
 # Example:
@@ -250,7 +267,17 @@ cd /shared/workspace/software/cview_currents/scripts
 bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-all 221013_WW /shared/runfiles/221013_WW_samples.txt
 ```
 
-2. Run Freyja
+3. Update Freyja to get the latest barcodes and lineages
+   1. Run the `update_freyja.sh` script; no arguments are needed
+
+```
+# Example:
+
+cd /shared/workspace/software/cview_currents/scripts
+bash update_freyja.sh
+```
+
+4. Run Freyja
    1. Prepare a one-column, no-header text file of S3 urls to the bam files to be processed 
       1. The file must also include a line specifying the S3 url of the metadata-containing file
          1. For `search` reports, this will be a freyja-format metadata csv
@@ -270,11 +297,11 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT04.R2__NA__NA__221010_WW__00X
 s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
 ```
 
-   2. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
-      1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
-      2. The run name (e.g., `221013_WW`)
-      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
-      4. The report type to generate (either `search` or `campus`)
+5. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
+   1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
+   2. The run name (e.g., `221013_WW`)
+   3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+   4. The report type to generate (either `search` or `campus`)
 
 ```
 # Example:
@@ -283,9 +310,17 @@ cd /shared/workspace/software/cview_currents/scripts
 # Command format:
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
 bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja search
-# If desired, check job status by running:
-squeue
 ```
+
+6. Check the pipeline status
+   1. Run `squeue` from time to time until the queue shows empty
+7. Commit result to Github
+   1. Locate and view the customized Github repo upload script
+      1. TODO
+   2. Run the customized Github upload script
+      1. TODO
+   3. Remove the temporary directory
+      1. TODO
 
 
 ## Running the Campus Pipeline
@@ -311,12 +346,12 @@ source /shared/workspace/software/anaconda3/bin/activate
 get_cview_bam_urls s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv /shared/temp
 ```
 
-   3. Locate the output file, which will be named with the prefix of the `*_summary-report_all.csv` input file and with the suffix `_rtl_wastewater_highcov_s3_urls.txt` 
-      1. Example:
-         1. Input: C-VIEW report `2022-08-10_01-07-42-all_summary-report_all.csv`
-         2. Output: bam S3 url file `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`
-      2. Note that this file contains one bam S3 url per line, plus one additional metadata line holding the S3 url of the C-VIEW report
-         1. The metadata line is prefixed with `# metadata:`
+2. Locate the output file, which will be named with the prefix of the `*_summary-report_all.csv` input file and with the suffix `_rtl_wastewater_highcov_s3_urls.txt` 
+   1. Example:
+      1. Input: C-VIEW report `2022-08-10_01-07-42-all_summary-report_all.csv`
+      2. Output: bam S3 url file `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`
+   2. Note that this file contains one bam S3 url per line, plus one additional metadata line holding the S3 url of the C-VIEW report
+      1. The metadata line is prefixed with `# metadata:`
 
 ```
 # Example: contents of /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt:
@@ -328,15 +363,24 @@ s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_r
 ```      
 
 
-2. Run Freyja and generate a report
-   2. Run the `run_distributed_freyja.sh` script with the following positional arguments:
+3. Update Freyja to get the latest barcodes and lineages
+   1. Run the `update_freyja.sh` script; no arguments are needed
+   
+```
+# Example:
+
+cd /shared/workspace/software/cview_currents/scripts
+bash update_freyja.sh
+```
+
+4. Run Freyja and generate a report
+   1. Run the `run_distributed_freyja.sh` script with the following positional arguments:
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`)
       2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
       3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
       4. The report type `campus`
-   3. Locate the results
-      1. The results of the freyja processing will be with the input S3 directory, in a folder named with the run name
-         1. The per-sample freyja results are in the 
+   2. Check the results upload
+      1. A new file holding the latest report results appears in the `s3://ucsd-all/campus_dashboard/` bucket
 
 ```
 # Example:
