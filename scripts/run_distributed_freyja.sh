@@ -57,7 +57,8 @@ while read -r SAMPLE_S3URL; do
     SAMPLE=$(basename "$SAMPLE_S3URL")
 
     echo "submitting freyja job for $SAMPLE"
-    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
+    # NB: *don't* double-quote dependency param
+    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
