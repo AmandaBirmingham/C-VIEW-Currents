@@ -11,3 +11,4 @@ source $ANACONDADIR/activate freyja-env
 echo "updating freyja"
 # TODO: decide whether to put back the outdir param
 freyja update # --outdir $LOCAL_RUN_DIR
+source $ANACONDADIR/deactivate
