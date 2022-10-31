@@ -60,17 +60,11 @@ while read -r SAMPLE_S3URL; do
   else
     SAMPLE=$(basename "$SAMPLE_S3URL")
 
-    # TODO: remove debugging
-    TEMP_VAR=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
-                OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
-                RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g')
-    echo "$TEMP_VAR"
-    echo "$CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh"
-
     echo "submitting freyja job for $SAMPLE"
     SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
+                VERSION_INFO=$VERSION_INFO,\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
       -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
       -D /shared/logs \
