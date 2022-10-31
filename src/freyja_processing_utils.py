@@ -500,6 +500,8 @@ def download_inputs():
         labels_fp = argv[3]
     else:
         ref_dir = get_ref_dir()
+        # TODO: ensure this is working right when files loaded from repo and
+        #  thus all come down at same time ...
         labels_fp = _get_latest_file(ref_dir, LABEL_FNAME_SUFFIX)
 
     if len(argv) > 4:
