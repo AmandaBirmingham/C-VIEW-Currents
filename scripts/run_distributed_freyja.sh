@@ -40,6 +40,9 @@ cd $CVIEWCURRENTS_DIR || exit 1
 VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | tr ' ' '_' | tr '\t' '_' | sed -z 's/\n/./g;s/.$/\n/')
 cd "$CURR_DIR" || exit 1
 
+# TODO: remove debugging
+echo "$VERSION_INFO"
+
 # upload the current freyja data files to the output dir
 aws s3 cp $FREYJA_DATA_DIR/usher_barcodes.csv "$OUTPUT_S3_DIR"/usher_barcodes.csv
 aws s3 cp $FREYJA_DATA_DIR/curated_lineages.json "$OUTPUT_S3_DIR"/curated_lineages.json
@@ -55,6 +58,15 @@ while read -r SAMPLE_S3URL; do
       # continue to next line
   else
     SAMPLE=$(basename "$SAMPLE_S3URL")
+
+    # TODO: remove debugging
+    TEMP_VAR=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
+                OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
+                VERSION_INFO="$VERSION_INFO",\
+                RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g')
+    echo "$TEMP_VAR"
+    exit 1
+
     echo "submitting freyja job for $SAMPLE"
     SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch "$TRANSFER_DEPENDENCY_PARAM" \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
