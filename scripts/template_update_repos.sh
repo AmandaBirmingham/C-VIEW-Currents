@@ -25,23 +25,24 @@ if [ -s TMP_DIR/RUN_NAME_repos.error.log ]; then
   exit 1
 fi
 
-#  # Upload freyja metadata and aggregate/relgrowthrate results to Josh's repo
-#  cd REPOS_DIR/SD-Freyja-Outputs || exit
-#  git checkout main
-#  git pull
-#
-#  mv TMP_DIR/*.csv REPOS_DIR/SD-Freyja-Outputs
-#  mv TMP_DIR/*.tsv REPOS_DIR/SD-Freyja-Outputs
-#
-#  git add *.csv
-#  git add *.tsv
+# Upload new freyja metadata and aggregate/relgrowthrate results to Josh's repo
+cd REPOS_DIR/SD-Freyja-Outputs || exit
+git checkout main
+git pull
 
-#  # commit/push changes direct to josh repo
-#  git commit -a -m "RUN_NAME"
-#  git push
+mv TMP_DIR/*.csv REPOS_DIR/SD-Freyja-Outputs
+mv TMP_DIR/*.tsv REPOS_DIR/SD-Freyja-Outputs
 
-# Upload report files to local fork and then make PR for andersen lab repo;
-# start by pulling down the updated report files
+# NB: -- denotes end of command line options, so any file names beginning
+# with - won't be treated as git options. Not that there should be any here ...
+git add -- *.csv
+git add -- *.tsv
+
+git commit -a -m "RUN_NAME"
+git push
+
+# Upload updated report files to local fork and then make PR for andersen
+# lab repo; start by pulling down the updated report files
 aws s3 cp REPORT_RUN_S3_DIR/outputs/ TMP_DIR/ \
   --recursive \
   --exclude "*" \
@@ -53,6 +54,7 @@ git pull upstream master  # get any updates from andersen lab (original) repo
 
 mv TMP_DIR/*.csv REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego
 
+# NB: no need to `git add` because we are only updating existing files
 git commit -a -m "RUN_NAME"  # orig repo updates + local changes, to fork
 git push
 
