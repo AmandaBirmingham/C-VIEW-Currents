@@ -148,6 +148,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   # NB: use | instead of / as sed command delimiter since some of the replaced
   # values contain /
   sed -i "s|TMP_DIR|$TMP_DIR|g" "$NEW_SCRIPT_FP"
+  sed -i "s|METADATA_S3URL|$METADATA_S3URL|g" "$NEW_SCRIPT_FP"
   sed -i "s|SUMMARY_S3_DIR|$AGG_OUTPUT_S3_DIR|g" "$NEW_SCRIPT_FP"
   sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|g" "$NEW_SCRIPT_FP"
   sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
