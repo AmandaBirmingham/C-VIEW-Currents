@@ -157,7 +157,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   echo ""
   echo "Check on job progress by running:"
   echo "  squeue"
-  echo "When the queue is empty, view the customized repo upload script:"
+  echo "When the queue is empty, review (if desired) the customized repo upload script:"
   echo "  more $NEW_SCRIPT_FP"
   echo "Run the customized repo upload script:"
   echo "  bash $NEW_SCRIPT_FP"

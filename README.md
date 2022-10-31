@@ -297,11 +297,11 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT04.R2__NA__NA__221010_WW__00X
 s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
 ```
 
-5. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
-   1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
-   2. The run name (e.g., `221013_WW`)
-   3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
-   4. The report type to generate (either `search` or `campus`)
+   3. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
+      1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
+      2. The run name (e.g., `221013_WW`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+      4. The report type to generate (either `search` or `campus`)
 
 ```
 # Example:
@@ -311,16 +311,43 @@ cd /shared/workspace/software/cview_currents/scripts
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
 bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja search
 ```
+   4. Notice the guidance for using completed results
+      1. The pipeline prints out customized instructions for next steps. Be sure to locate these instructions, which begin with the line `Check on job progress by running:`
 
-6. Check the pipeline status
+```
+# Example customized instructions from pipeline:
+
+Check on job progress by running:
+  squeue
+When the queue is empty, review (if desired) the customized repo upload script:
+  more /tmp/cview-currents-JdsVoaNirv/2022-10-31_22-31-15_221027_WW_search_update_repos.sh
+Run the customized repo upload script:
+  bash /tmp/cview-currents-JdsVoaNirv/2022-10-31_22-31-15_221027_WW_search_update_repos.sh
+When finished, delete the temporary directory:
+   rm -rf /tmp/cview-currents-JdsVoaNirv
+  
+REMINDER: Did you remember to run
+  bash /shared/workspace/software/cview_currents/scripts/update_freyja.sh
+to update Freyja before this?  If not, cancel these jobs with
+  scancel -u $USER
+and update freyja before continuing!
+```      
+
+5. Check the pipeline status
    1. Run `squeue` from time to time until the queue shows empty
-7. Commit result to Github
-   1. Locate and view the customized Github repo upload script
-      1. TODO
-   2. Run the customized Github upload script
-      1. TODO
-   3. Remove the temporary directory
-      1. TODO
+6. Commit result to Github
+   1. Follow the customized instructions printed out by `run_distributed_freyja.sh`
+      1. If desired, view the customized Github repo upload script
+      2. Run the customized Github upload script
+      3. Remove the temporary directory holding the customized script
+
+```
+# Example:
+
+more /tmp/cview-currents-JdsVoaNirv/2022-10-31_22-31-15_221027_WW_search_update_repos.sh
+bash /tmp/cview-currents-JdsVoaNirv/2022-10-31_22-31-15_221027_WW_search_update_repos.sh
+rm -rf /tmp/cview-currents-JdsVoaNirv
+```
 
 
 ## Running the Campus Pipeline
