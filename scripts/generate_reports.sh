@@ -22,18 +22,20 @@ echo "$VERSION_INFO" >> "$WORKSPACE"/"$REPORT_NAME".version.log
 generate_freyja_reports() {
   mkdir "$WORKSPACE"/inputs
   mkdir "$WORKSPACE"/outputs
+  mkdir "$WORKSPACE"/temp
 
   aws s3 cp "$METADATA_S3URL" "$WORKSPACE"/inputs
 
   # get the error log(s) from the summary dir;
   # if any errors happened upstream of here, report creation should not happen
   echo "Downloading and gathering error logs"
-  aws s3 cp "$SUMMARY_S3_DIR"/ "$WORKSPACE"/ \
+  aws s3 cp "$SUMMARY_S3_DIR"/ "$WORKSPACE"/temp/ \
     --recursive \
     --exclude "*" \
     --include "*error.log"
 
-  cat "$WORKSPACE"/*error.log > "$WORKSPACE"/"$REPORT_NAME"_reports.error.log
+  cat "$WORKSPACE"/temp/*error.log > "$WORKSPACE"/"$REPORT_NAME"_reports.error.log
+  rm -rf "$WORKSPACE"/temp
   if [ -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file not empty
     echo "Errors in processing $RUN_NAME; report creation cancelled"
     return 1  # exit function, go straight to aws upload
