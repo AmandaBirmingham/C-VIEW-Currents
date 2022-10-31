@@ -8,9 +8,11 @@
 # Sample usage:
 # bash /shared/workspace/software/cview_currents/scripts/run_distributed_freyja.sh /shared/temp/220708_run_bam_s3_urls.txt 220708_run s3://ucsd-rtl-test
 
-REPOS_DIR=/shared/workspace/software/
+REPOS_DIR=/shared/workspace/software
 CVIEWCURRENTS_DIR="$REPOS_DIR"/cview_currents
+FREYJA_DATA_DIR=/shared/workspace/software/anaconda3/envs/freyja-env/lib/python3.10/site-packages/freyja/data
 METADATA_LINE_PREFIX="# metadata:"
+CURR_DIR="$(dirname "$(realpath "$0")")"
 
 if [ "$#" -ne 4 ] ; then
   echo "USAGE: $0 <s3_urls_fp> <run_name> <s3_output_base> <report_type>"; exit 1
@@ -33,23 +35,14 @@ if [[ ! "$REPORT_TYPE" =~ ^(search|campus)$ ]]; then
   exit 1
 fi
 
-echo "submitting freja update job"
-UPDATE_SLURM_JOB_ID=$UPDATE_SLURM_JOB_ID:$(sbatch \
-  -J update_$RUN_NAME \
-  -D /shared/logs \
-  -c 32 \
-  $CVIEWCURRENTS_DIR/scripts/update_freyja.sh)
+cd $CVIEWCURRENTS_DIR || exit 1
+# see CVIEW show_version.sh for full description of this command
+VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | tr ' ' '_' | tr '\t' '_' | sed -z 's/\n/./g;s/.$/\n/')
+cd "$CURR_DIR" || exit 1
 
-UPDATE_DEPENDENCY_PARAM="--dependency=afterok:${UPDATE_SLURM_JOB_ID##* }"
-
-TRANSFER_SETTINGS_SLURM_JOB_ID=$TRANSFER_SETTINGS_SLURM_JOB_ID:$(sbatch $UPDATE_DEPENDENCY_PARAM \
-    --export=$(echo "OUTPUT_S3_DIR=$OUTPUT_S3_DIR" | sed 's/ //g') \
-    -J settings_transfer_"$RUN_NAME"_"$TIMESTAMP" \
-    -D /shared/logs \
-    -c 2 \
-    $CVIEWCURRENTS_DIR/scripts/transfer_freyja_settings_files.sh)
-
-TRANSFER_DEPENDENCY_PARAM="--dependency=afterok:${TRANSFER_SETTINGS_SLURM_JOB_ID##* }"
+# upload the current freyja data files to the output dir
+aws s3 cp $FREYJA_DATA_DIR/usher_barcodes.csv "$OUTPUT_S3_DIR"/usher_barcodes.csv
+aws s3 cp $FREYJA_DATA_DIR/curated_lineages.json "$OUTPUT_S3_DIR"/curated_lineages.json
 
 METADATA_S3URL=""
 SAMPLES_JOB_IDS=""
@@ -60,9 +53,10 @@ while read -r SAMPLE_S3URL; do
   else
     SAMPLE=$(basename "$SAMPLE_S3URL")
     echo "submitting freyja job for $SAMPLE"
-    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
+    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch "$TRANSFER_DEPENDENCY_PARAM" \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
+                VERSION_INFO=$VERSION_INFO,\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
       -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
       -D /shared/logs \
@@ -71,7 +65,7 @@ while read -r SAMPLE_S3URL; do
   fi
 done <"$S3_URLS_FP"
 
-SAMPLES_JOB_IDS=$(echo $SAMPLES_JOB_IDS | sed 's/Submitted batch job //g')
+SAMPLES_JOB_IDS=$(echo "$SAMPLES_JOB_IDS" | sed 's/Submitted batch job //g')
 
 # NB: other dependency param declarations include a ":" after "afterok"
 # but this one does NOT, because the leading ":" is already included in the
@@ -80,13 +74,14 @@ SAMPLES_DEPENDENCY_PARAM="--dependency=afterok$SAMPLES_JOB_IDS"
 
 echo "submitting freyja aggregate job for $SAMPLES_OUTPUT_S3_DIR"
 AGG_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv
-AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \
+AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch "$SAMPLES_DEPENDENCY_PARAM" \
   --export=$(echo "RUN_NAME=$RUN_NAME,\
+            VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             OUT_AGG_FNAME=$AGG_FNAME, \
             SAMPLES_S3_DIR=$SAMPLES_OUTPUT_S3_DIR, \
             OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
-  -J aggregate_$RUN_NAME \
+  -J aggregate_"$RUN_NAME" \
   -D /shared/logs \
   -c 32 \
   $CVIEWCURRENTS_DIR/scripts/aggregate_freyja_outputs.sh)
@@ -100,57 +95,64 @@ fi
 
 echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job
-REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
+REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
   --export=$(echo "REPORT_NAME=$REPORT_NAME,\
+            VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             SUMMARY_S3_DIR=$AGG_OUTPUT_S3_DIR, \
             METADATA_S3URL=$METADATA_S3URL, \
             REPORT_TYPE=$REPORT_TYPE, \
             OUTPUT_S3_DIR=$REPORT_RUN_S3_DIR" | sed 's/ //g') \
-  -J report_$REPORT_NAME \
+  -J report_"$REPORT_NAME" \
   -D /shared/logs \
   -c 32 \
   $CVIEWCURRENTS_DIR/scripts/generate_reports.sh)
 
 AGGREGATE_S3URL="$AGG_OUTPUT_S3_DIR"/"$AGG_FNAME"
-RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 
 if [[ "$REPORT_TYPE" == search ]]; then
+  RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
+
   echo "submitting freyja relgrowthrate job for $RUN_NAME"
-  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
+  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
     --export=$(echo "RUN_NAME=$RUN_NAME,\
+              VERSION_INFO=$VERSION_INFO,\
               RUN_WORKSPACE=$RUN_WORKSPACE,\
               METADATA_S3URL=$METADATA_S3URL, \
               AGGREGATE_S3URL=$AGGREGATE_S3URL, \
               OUT_FNAME=$RELGROWTHRATE_FNAME, \
               OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
-    -J growth_$RUN_NAME \
+    -J growth_"$RUN_NAME" \
     -D /shared/logs \
     -c 32 \
     $CVIEWCURRENTS_DIR/scripts/calc_freyja_relgrowthrate.sh)
 
-    RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+    # RELGROWTHRATE_DEPENDENCY_PARAM="--dependency=afterok:${RELGROWTHRATE_JOB_ID##* }"
+
+  TMP_DIR=$(mktemp -d -t cview-currents-XXXXXXXXXX)
+  NEW_SCRIPT_FP="$TMP_DIR/$REPORT_NAME"_update_repos.sh
+  cat "$VERSION_INFO" > "$TMP_DIR/$REPORT_NAME"_version.log
+  cp "$CURR_DIR"/template_update_repos.sh "$NEW_SCRIPT_FP"
+
+  # NB: use | instead of / as sed command delimiter since some of the replaced
+  # values contain /
+  sed -i "s|TMP_DIR|$TMP_DIR|g" "$NEW_SCRIPT_FP"
+  sed -i "s|SUMMARY_S3_DIR|$AGG_OUTPUT_S3_DIR|g" "$NEW_SCRIPT_FP"
+  sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|g" "$NEW_SCRIPT_FP"
+  sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
+  sed -i "s|REPOS_DIR|$REPOS_DIR|g" "$NEW_SCRIPT_FP"
+
+  echo "Check on job progress by running:"
+  echo "  squeue"
+  echo "When the queue is empty, view the customized repo upload script:"
+  echo "  more $NEW_SCRIPT_FP"
+  echo "Run the customized repo upload script:"
+  echo "  bash $NEW_SCRIPT_FP"
+  echo "When finished, delete the temporary directory:"
+  echo "   rm -rf $TMP_DIR"
 fi
 
 # copy the inputs/settings info to the output s3 directory for tracking
 # (NB: make sure to do this at end, after freyja update has refreshed barcodes/lineages/etc)
-aws s3 cp $S3_URLS_FP $OUTPUT_S3_DIR/s3_urls.txt
+aws s3 cp "$S3_URLS_FP" "$OUTPUT_S3_DIR/s3_urls.txt"
 
-tmp_dir=$(mktemp -d -t cview-currents-XXXXXXXXXX)
-echo "Select run data stored to temporary dir $tmp_dir"
-echo "When finished examining data, run"
-echo "   rm -rf $tmp_dir"
-
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-NEW_SCRIPT_FP=$tmp_dir/"$REPORT_NAME"_update_repos.sh
-cp "$SCRIPT_DIR"/template_update_repos.sh "$NEW_SCRIPT_FP"
-# NB: use | instead of / as sed command delimiter since some of the replaced
-# values contain /
-sed -i "s|TMP_DIR|$tmp_dir|g" "$NEW_SCRIPT_FP"
-sed -i "s|SUMMARY_S3_DIR|$AGG_OUTPUT_S3_DIR|g" "$NEW_SCRIPT_FP"
-sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|g" "$NEW_SCRIPT_FP"
-sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
-sed -i "s|REPOS_DIR|$REPOS_DIR|g" "$NEW_SCRIPT_FP"
-
-echo "view customized repo upload script at"
-echo "   $NEW_SCRIPT_FP"
