@@ -166,8 +166,8 @@ fi
 
 echo ""
 echo "REMINDER: Did you remember to run"
-echo "  bash scripts/update_freyja.sh"
-echo "before this?  If not, cancel these jobs with"
+echo "  bash $CURR_DIR/update_freyja.sh"
+echo "to update Freyja before this?  If not, cancel these jobs with"
 echo '  scancel -u $USER'  #NB: single quotes bc don't WANT $USER to expand
 echo "and update freyja before continuing!"
 echo ""  # spacer line
