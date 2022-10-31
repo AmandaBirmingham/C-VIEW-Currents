@@ -21,7 +21,7 @@ cat TMP_DIR/*error.log > TMP_DIR/RUN_NAME_repos.error.log
 # if any errors happened upstream of here, the results shouldn't be pushed
 # to the repositories
 if [ -s TMP_DIR/RUN_NAME_repos.error.log ]; then
-  echo "Errors in processing RUN_NAME; repo upload cancelled"
+  echo "Errors were logged while $RUN_NAME processing; repo upload cancelled"
   exit 1
 fi
 
