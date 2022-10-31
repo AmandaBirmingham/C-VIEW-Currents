@@ -40,9 +40,6 @@ cd $CVIEWCURRENTS_DIR || exit 1
 VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | tr ' ' '_' | tr '\t' '_' | sed -z 's/\n/./g;s/.$/\n/')
 cd "$CURR_DIR" || exit 1
 
-# TODO: remove debugging
-echo "$VERSION_INFO"
-
 # upload the current freyja data files to the output dir
 aws s3 cp $FREYJA_DATA_DIR/usher_barcodes.csv "$OUTPUT_S3_DIR"/usher_barcodes.csv
 aws s3 cp $FREYJA_DATA_DIR/curated_lineages.json "$OUTPUT_S3_DIR"/curated_lineages.json
@@ -60,7 +57,7 @@ while read -r SAMPLE_S3URL; do
     SAMPLE=$(basename "$SAMPLE_S3URL")
 
     echo "submitting freyja job for $SAMPLE"
-    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
+    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
                 VERSION_INFO=$VERSION_INFO,\
@@ -69,9 +66,6 @@ while read -r SAMPLE_S3URL; do
       -D /shared/logs \
       -c 2 \
       $CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh)
-
-    # TODO: remove debug exit
-    exit 1
   fi
 done <"$S3_URLS_FP"
 
@@ -84,9 +78,9 @@ SAMPLES_DEPENDENCY_PARAM="--dependency=afterok$SAMPLES_JOB_IDS"
 
 echo "submitting freyja aggregate job for $SAMPLES_OUTPUT_S3_DIR"
 AGG_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv
-AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch "$SAMPLES_DEPENDENCY_PARAM" \
+AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
   --export=$(echo "RUN_NAME=$RUN_NAME,\
-            VERSION_INFO="$VERSION_INFO",\
+            VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             OUT_AGG_FNAME=$AGG_FNAME, \
             SAMPLES_S3_DIR=$SAMPLES_OUTPUT_S3_DIR, \
@@ -105,9 +99,9 @@ fi
 
 echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job
-REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
+REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
   --export=$(echo "REPORT_NAME=$REPORT_NAME,\
-            VERSION_INFO="$VERSION_INFO",\
+            VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
             SUMMARY_S3_DIR=$AGG_OUTPUT_S3_DIR, \
             METADATA_S3URL=$METADATA_S3URL, \
@@ -124,9 +118,9 @@ if [[ "$REPORT_TYPE" == search ]]; then
   RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 
   echo "submitting freyja relgrowthrate job for $RUN_NAME"
-  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch "$AGGREGATE_DEPENDENCY_PARAM" \
+  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
     --export=$(echo "RUN_NAME=$RUN_NAME,\
-              VERSION_INFO="$VERSION_INFO",\
+              VERSION_INFO=$VERSION_INFO,\
               RUN_WORKSPACE=$RUN_WORKSPACE,\
               METADATA_S3URL=$METADATA_S3URL, \
               AGGREGATE_S3URL=$AGGREGATE_S3URL, \
