@@ -27,7 +27,7 @@ WORKSPACE="$RUN_WORKSPACE/$SAMPLE"
 rm -rf "$WORKSPACE"
 mkdir -p "$WORKSPACE"
 
-echo "$VERSION_INFO" >> "$WORKSPACE/$SAMPLE.log"
+echo "$VERSION_INFO" >> "$WORKSPACE/$SAMPLE.version.log"
 
 run_freyja_on_sample() {
   # single # because we want to remove the SHORTEST match before the . , thus
