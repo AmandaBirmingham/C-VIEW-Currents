@@ -68,7 +68,7 @@ while read -r SAMPLE_S3URL; do
     echo "$CVIEWCURRENTS_DIR/scripts/run_freyja_on_sample.sh"
 
     echo "submitting freyja job for $SAMPLE"
-    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch "$TRANSFER_DEPENDENCY_PARAM" \
+    SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
