@@ -60,6 +60,7 @@ while read -r SAMPLE_S3URL; do
     # NB: *don't* double-quote dependency param
     SAMPLES_JOB_IDS=$SAMPLES_JOB_IDS:$(sbatch $TRANSFER_DEPENDENCY_PARAM \
       --export=$(echo "SAMPLE_S3URL=$SAMPLE_S3URL,\
+                VERSION_INFO=$VERSION_INFO,\
                 OUTPUT_S3_DIR=$SAMPLES_OUTPUT_S3_DIR,\
                 RUN_WORKSPACE=$RUN_WORKSPACE" | sed 's/ //g') \
       -J "$SAMPLE"_"$RUN_NAME"_"$TIMESTAMP" \
@@ -81,7 +82,8 @@ SAMPLES_DEPENDENCY_PARAM="--dependency=afterok$SAMPLES_JOB_IDS"
 
 echo "submitting freyja aggregate job for $SAMPLES_OUTPUT_S3_DIR"
 AGG_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_aggregated.tsv
-AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
+# NB: *don't* double-quote dependency param
+AGGREGATE_JOB_ID=$AGGREGATE_JOB_ID:$(sbatch $SAMPLES_DEPENDENCY_PARAM \
   --export=$(echo "RUN_NAME=$RUN_NAME,\
             VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
@@ -102,7 +104,8 @@ fi
 
 echo "submitting report creation job for $REPORT_NAME"
 # NB: depends on aggregate job but NOT on relgrowthrate job
-REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
+# NB: *don't* double-quote dependency param
+REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
   --export=$(echo "REPORT_NAME=$REPORT_NAME,\
             VERSION_INFO=$VERSION_INFO,\
             RUN_WORKSPACE=$RUN_WORKSPACE,\
@@ -121,7 +124,8 @@ if [[ "$REPORT_TYPE" == search ]]; then
   RELGROWTHRATE_FNAME="$RUN_NAME"_"$TIMESTAMP"_freyja_rel_growth_rates.csv
 
   echo "submitting freyja relgrowthrate job for $RUN_NAME"
-  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \  # NB: *don't* double-quote dependency param
+  # NB: *don't* double-quote dependency param
+  RELGROWTHRATE_JOB_ID=$RELGROWTHRATE_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
     --export=$(echo "RUN_NAME=$RUN_NAME,\
               VERSION_INFO=$VERSION_INFO,\
               RUN_WORKSPACE=$RUN_WORKSPACE,\
