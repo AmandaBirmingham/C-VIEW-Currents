@@ -142,7 +142,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   # in the /shared/workspace/software directory
   TMP_DIR=$(mktemp -d -t cview-currents-XXXXXXXXXX)
   NEW_SCRIPT_FP="$TMP_DIR/$REPORT_NAME"_update_repos.sh
-  cat "$VERSION_INFO" > "$TMP_DIR/$REPORT_NAME"_version.log
+  echo "$VERSION_INFO" > "$TMP_DIR/$REPORT_NAME"_version.log
   cp "$CURR_DIR"/template_update_repos.sh "$NEW_SCRIPT_FP"
 
   # NB: use | instead of / as sed command delimiter since some of the replaced
