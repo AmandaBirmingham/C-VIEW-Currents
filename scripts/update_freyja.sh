@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
+# Create a job to run freyja update to get latest barcodes and lineages
+#
+# NB: A job seems like overkill for this, but it is necessary
+# because the head node of our cluster configuration
+# doesn't have enough memory and it fails with a cryptic error
+# (FileNotFoundError: [Errno 2] No such file or directory: './lineagePaths.txt')
+# because an intermediate file can't be created.
 
-# Activate conda env freyja-env
-ANACONDADIR=/shared/workspace/software/anaconda3/bin
-source $ANACONDADIR/activate freyja-env
+CVIEWCURRENTS_DIR="$REPOS_DIR"/cview_currents
 
-# by default, the usher_barcodes.csv and curated_lineages.json files
-# end up in
-# /shared/workspace/software/anaconda3/envs/freyja-env/lib/python3.10/site-packages/freyja/data
-
-echo "updating freyja"
-# TODO: decide whether to put back the outdir param
-freyja update # --outdir $LOCAL_RUN_DIR
-source $ANACONDADIR/deactivate
+echo "submitting freja update job"
+UPDATE_SLURM_JOB_ID=$UPDATE_SLURM_JOB_ID:$(sbatch \
+  -J update_freyja \
+  -D /shared/logs \
+  -c 32 \
+  "$CVIEWCURRENTS_DIR/scripts/update_freyja.sh")
