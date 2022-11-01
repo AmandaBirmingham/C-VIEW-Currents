@@ -7,7 +7,7 @@
 # (FileNotFoundError: [Errno 2] No such file or directory: './lineagePaths.txt')
 # because an intermediate file can't be created.
 
-CVIEWCURRENTS_DIR="$REPOS_DIR"/cview_currents
+CVIEWCURRENTS_DIR=/shared/workspace/software/cview_currents
 
 echo "submitting freja update job"
 UPDATE_SLURM_JOB_ID=$UPDATE_SLURM_JOB_ID:$(sbatch \
