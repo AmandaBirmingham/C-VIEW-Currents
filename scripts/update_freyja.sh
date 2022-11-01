@@ -14,4 +14,4 @@ UPDATE_SLURM_JOB_ID=$UPDATE_SLURM_JOB_ID:$(sbatch \
   -J update_freyja \
   -D /shared/logs \
   -c 32 \
-  "$CVIEWCURRENTS_DIR/scripts/update_freyja.sh")
+  "$CVIEWCURRENTS_DIR/scripts/update_freyja_job.sh")
