@@ -161,31 +161,39 @@ pcluster create-cluster \
 ```pcluster ssh --cluster-name <your_cluster_name> -i /path/to/keyfile.pem```
 
 7. On the head node of the cluster, perform cluster-specific set-up
-   1. Activate the `cview_currents` environment
-      1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents`
-   2. Configure `aws cli` access
+   1. Configure AWS command-line access
       1. Find the chosen AWS access key and secret access key
       2. Run `aws configure` to set up the head node with these credentials so it can access the 
       necessary AWS S3 resources
-   3. Configure `git` check-in information
+   2. Configure `git` check-in information
       1. Run `git config --global --edit` to edit the config doc; then
       2. Set the user name and email for the chosen github account, uncomment those lines, and resave
-   4. Configure Github ssh access
+   3. Configure Github ssh access
       1. Get the RSA key-pair (both public and private) for github user's ssh key
       2. Copy the key-pair into `/home/ubuntu/.ssh/<keyname>`
-      3. Add the public key to the ssh-agent
-         1. If desired, first ensure that the ssh-agent is active by running `eval "$(ssh-agent -s)"` and seeing it returns an agent pid
-         2. Run `ssh-add /home/ubuntu/.ssh/<keyname>`
+      3. Modify the `.bashrc` file to add the public key to the ssh-agent on login
+         1. Run `nano ~/.bashrc` to edit the `.bashrc` file
+         2. At the bottom of the file, paste in the following three lines:
+            1. `# C-VIEW Currents addition: add CviewMachineAcct ssh to ssh agent`
+            2. `eval "$(ssh-agent)"`
+            3. `ssh-add /home/ubuntu/.ssh/id_ed25519_CviewMachineAcct`
+         3. Save the changes and log out of the cluster
+         4. Log back so the changes take effect
       4. Validate ssh access to github is working
          1. Run `ssh -T git@github.com`
          2. Confirm the addition of github.com to the list of known hosts
          3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
-   5. Configure `gh cli` access
-      2. Run `gh auth login`
-      3. Choose `SSH` as the protocol
-      4. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
-      5. Title the key `<keyname>`
-   6. Clone the SEARCH repos (note that this must come AFTER configuring Github ssh access)
+   4. Configure `gh cli` access
+      2. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents` to activate the cview_currents environment
+      3. Run `gh auth login`
+      4. Choose `GitHub.com` as the account to log into
+      5. Choose `SSH` as the protocol
+      6. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
+      7. Title the key `<keyname>`
+      8. Open a browser and *ensure that you are logged in with your chosen github account!*
+      9. As directed by the `gh` auth process, open the url `https://github.com/login/device`
+      10. Paste in the one-time code provided by the process and confirm access
+   5. Clone the SEARCH repos (note that this must come AFTER configuring Github ssh access)
       1. Run `cd /shared/workspace/software`
       2. Run `git clone git@github.com:joshuailevy/SD-Freyja-Outputs.git` to clone the (private) repo for the raw results
       3. Run `git clone git@github.com:AmandaBirmingham/SARS-CoV-2_WasteWater_San-Diego.git` to clone the (public) fork of the Andersen lab repo for dashboard inputs
