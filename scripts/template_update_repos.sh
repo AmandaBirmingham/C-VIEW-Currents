@@ -46,7 +46,7 @@ git push
 aws s3 cp REPORT_RUN_S3_DIR/outputs/ TMP_DIR/ \
   --recursive \
   --exclude "*" \
-  --include "*.csv"
+  --include "*_sewage_seqs.csv"
 
 cd REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego || exit
 git checkout master
