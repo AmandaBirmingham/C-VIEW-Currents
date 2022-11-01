@@ -254,7 +254,7 @@ nano /shared/runfiles/221013_WW_samples.txt
 2. Transfer the relevant `.bam` and their associated `.bai` files from the Genexus to S3
    1. Run the `transfer_genexus_bams_to_s3.sh` script with the following positional arguments:
       1. The local directory in which to temporarily store Genexus files (e.g., `/shared/temp`)
-      2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-all`)
+      2. The S3 directory in which a folder holding these bams should be created (e.g., `s3://ucsd-rtl-test`)
       3. The run name (e.g., `221013_WW`)
       4. The file of sample names for this run (e.g., `/shared/runfiles/221013_WW_samples.txt`)
    2. This step also automatically generates a freyja-format metadata csv and uploads it to the run's S3 directory
@@ -265,7 +265,7 @@ nano /shared/runfiles/221013_WW_samples.txt
 cd /shared/workspace/software/cview_currents/scripts
 # Command format:
 # bash transfer_genexus_bams_to_s3.sh <local_dir> <s3_parent_directory> <run_name> <samples_file>
-bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-all 221013_WW /shared/runfiles/221013_WW_samples.txt
+bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-rtl-test 221013_WW /shared/runfiles/221013_WW_samples.txt
 ```
 
 3. Update Freyja to get the latest barcodes and lineages
@@ -287,20 +287,20 @@ bash update_freyja.sh
 ```
 # Example: contents of /shared/temp/221013_WW_s3_urls.txt:
 
-s3://ucsd-all/221010_WW/221010_WW_bam/10.4.22.ENCOCT03.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.4.22.ENCSEP29.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.PLOCT02.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.PLOCT03.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.PLOCT04.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.PLOCT05.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT04.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
-s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.4.22.ENCOCT03.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.4.22.ENCSEP29.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.PLOCT02.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.PLOCT03.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.PLOCT04.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.PLOCT05.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.SBOCT04.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
+s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X.trimmed.sorted.unfiltered.bam
 ```
 
    3. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
       2. The run name (e.g., `221013_WW`)
-      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja`)
       4. The report type to generate (either `search` or `campus`)
 
 ```
@@ -309,7 +309,7 @@ s3://ucsd-all/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW__00X
 cd /shared/workspace/software/cview_currents/scripts
 # Command format:
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
-bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-all/freyja search
+bash run_distributed_freyja.sh /shared/temp/221013_WW_s3_urls.txt 221013_WW s3://ucsd-rtl-test/freyja search
 ```
    4. Notice the guidance for using completed results
       1. The pipeline prints out customized instructions for next steps. Be sure to locate these instructions, which begin with the line `Check on job progress by running:`
@@ -405,10 +405,10 @@ bash update_freyja.sh
    1. Run the `run_distributed_freyja.sh` script with the following positional arguments:
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`)
       2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
-      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-all/freyja`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja`)
       4. The report type `campus`
    2. Check the results upload
-      1. A new file holding the latest report results appears in the `s3://ucsd-all/campus_dashboard/` bucket
+      1. A new file holding the latest report results appears in the `s3://ucsd-rtl-test/campus_dashboard/` bucket
 
 ```
 # Example:
@@ -416,7 +416,7 @@ bash update_freyja.sh
 cd /shared/workspace/software/cview_currents/scripts
 # Command format:
 # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
-bash run_distributed_freyja.sh /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt 2022-08-10_01-07-42-all_rtl_wastewater_highcov s3://ucsd-all/freyja campus
+bash run_distributed_freyja.sh /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt 2022-08-10_01-07-42-all_rtl_wastewater_highcov s3://ucsd-rtl-test/freyja campus
 # If desired, check job status by running:
 squeue
 ```
