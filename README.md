@@ -280,9 +280,7 @@ bash update_freyja.sh
 
 4. Run Freyja
    1. Prepare a one-column, no-header text file of S3 urls to the bam files to be processed 
-      1. The file must also include a line specifying the S3 url of the metadata-containing file
-         1. For `search` reports, this will be a freyja-format metadata csv
-         2. For `campus` reports, this will be a C-VIEW `*_summary-report_all.csv` 
+      1. The file must also include a line specifying the S3 url of the freyja-format metadata csv
       2. NOTE: This file *is created automatically* if the bams were transferred to S3 with using the `transfer_genexus_bams_to_s3.sh` script described above; in this case, it is located in `<local_dir>/<run_name>_s3_urls.txt`
       
 ```
