@@ -35,6 +35,7 @@ if [ "$#" -ne 4 ] ; then
 else
   SAMPLENAMES_FP=$4
 fi
+echo ""
 
 LOCAL_DIR=$1
 # if the local dir ends with a slash, remove the slash
@@ -61,6 +62,7 @@ elif [ -f "$LOCAL_RUN_DIR" ] ; then
     echo "Specified local folder already exists as a file: $LOCAL_RUN_DIR; aborting." ; exit 1
 else
     echo "Creating local folder: $LOCAL_RUN_DIR"
+    echo ""
     mkdir "$LOCAL_RUN_DIR"
 fi
 
@@ -88,7 +90,6 @@ for sample_name in "${SAMPLE_NAMES[@]}" ; do
     # NB: "Expanding an array without an index only gives the first element"--
     # and that is exactly the behavior we want here since array should have
     # only one element, as is verified above
-    echo ""
     echo "Downloading: $bam_path to $local_path"
     scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
     scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path".bai "$local_path".bai
@@ -113,9 +114,6 @@ METADATA_EXIT_CODE=$?
 if [ $METADATA_EXIT_CODE != 0 ] ; then
   echo "make_freyja_metadata failed; aborting upload to s3."
   exit 1
-else
-  # TODO: remove test echo
-  echo "metadata exit code: $METADATA_EXIT_CODE"
 fi
 source $ANACONDADIR/deactivate
 
