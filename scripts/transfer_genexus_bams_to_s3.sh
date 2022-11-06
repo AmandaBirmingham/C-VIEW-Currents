@@ -23,7 +23,7 @@ GENEXUS_USERNAME='placeholder'
 GENEXUS_IP='placeholder'
 GENEXUS_RSA_FP=~/genexus/id_rsa
 GENEXUS_REPORTS='/serverdata/results/analysis/output/reports'
-GENEXUS_FOLDER_PREFIX="AssayDev_"
+GENEXUS_FOLDER_PREFIX="AssayDev"
 GENEXUS_ASSAY_NAME="SARS-CoV-2Insight"
 GENEXUS_BAM='merged.bam.ptrim.bam'
 OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'
@@ -69,7 +69,7 @@ fi
 # (and thus no commas)
 SAMPLE_NAMES=($(awk -F "," '{print $1}' "$SAMPLENAMES_FP"))
 for sample_name in "${SAMPLE_NAMES[@]}" ; do
-    bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/$GENEXUS_FOLDER_PREFIX$sample_name_$GENEXUS_ASSAY_NAME*/$GENEXUS_BAM"))
+    bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$GENEXUS_FOLDER_PREFIX"_"$sample_name"_"$GENEXUS_ASSAY_NAME*/$GENEXUS_BAM"))
     num_bam_paths=${#bam_path[@]}
     if [ $num_bam_paths != 1 ] ; then
       echo "Expected 1 bam for sample '$sample_name' but found $num_bam_paths; aborting."
