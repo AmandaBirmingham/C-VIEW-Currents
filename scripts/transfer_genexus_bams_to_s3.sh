@@ -74,7 +74,7 @@ for sample_name in "${SAMPLE_NAMES[@]}" ; do
     bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$sample_name*/$GENEXUS_BAM"))
     num_bam_paths=${#bam_path[@]}
     if [ $num_bam_paths != 1 ] ; then
-      echo "Expected 1 bam for sample '$sample_name' but found $num_bam_paths"
+      echo "Expected 1 bam for sample '$sample_name' but found $num_bam_paths; aborting."
       exit 1
     fi
 
