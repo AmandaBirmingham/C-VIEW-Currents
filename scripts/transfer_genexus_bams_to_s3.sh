@@ -69,8 +69,6 @@ fi
 # (and thus no commas)
 SAMPLE_NAMES=($(awk -F "," '{print $1}' "$SAMPLENAMES_FP"))
 for sample_name in "${SAMPLE_NAMES[@]}" ; do
-    # TODO: put back real line
-    # bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/$GENEXUS_FOLDER_PREFIX$sample_name_$GENEXUS_ASSAY_NAME*/$GENEXUS_BAM"))
     bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$sample_name*/$GENEXUS_BAM"))
     num_bam_paths=${#bam_path[@]}
     if [ $num_bam_paths != 1 ] ; then
