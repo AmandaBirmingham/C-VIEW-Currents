@@ -56,9 +56,9 @@ UPLOAD_S3_BAM_FOLDER="$UPLOAD_S3_FOLDER/$RUN_NAME"_bam
 # check local folder
 LOCAL_RUN_DIR=$LOCAL_DIR/$RUN_NAME
 if [ -d "$LOCAL_RUN_DIR" ] ; then
-    echo "Specified local folder already exists: $LOCAL_RUN_DIR" ; exit 1
+    echo "Specified local folder already exists: $LOCAL_RUN_DIR; aborting." ; exit 1
 elif [ -f "$LOCAL_RUN_DIR" ] ; then
-    echo "Specified local folder already exists as a file: $LOCAL_RUN_DIR" ; exit 1
+    echo "Specified local folder already exists as a file: $LOCAL_RUN_DIR; aborting." ; exit 1
 else
     echo "Creating local folder: $LOCAL_RUN_DIR"
     mkdir "$LOCAL_RUN_DIR"
