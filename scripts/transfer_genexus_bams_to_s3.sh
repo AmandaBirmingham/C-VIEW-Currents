@@ -21,9 +21,11 @@
 # important constants
 GENEXUS_USERNAME='placeholder'
 GENEXUS_IP='placeholder'
-GENEXUS_REPORTS='/serverdata/results/analysis/output/reports'
-GENEXUS_BAM='merged.bam.ptrim.bam'
 GENEXUS_RSA_FP=~/genexus/id_rsa
+GENEXUS_REPORTS='/serverdata/results/analysis/output/reports'
+GENEXUS_FOLDER_PREFIX="AssayDev_"
+GENEXUS_ASSAY_NAME="SARS-CoV-2Insight"
+GENEXUS_BAM='merged.bam.ptrim.bam'
 OUT_BAM_SUF='trimmed.sorted.unfiltered.bam'
 ANACONDADIR=/shared/workspace/software/anaconda3/bin
 
@@ -65,33 +67,34 @@ fi
 # take the first column of a comma-delimited file;
 # note that it is fine for the file to contain only one column
 # (and thus no commas)
-FOLDER_IDENTIFIERS=($(awk -F "," '{print $1}' "$SAMPLENAMES_FP"))
+SAMPLE_NAMES=($(awk -F "," '{print $1}' "$SAMPLENAMES_FP"))
+for sample_name in "${SAMPLE_NAMES[@]}" ; do
+    # TODO: put back real line
+    # bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/$GENEXUS_FOLDER_PREFIX$sample_name_$GENEXUS_ASSAY_NAME*/$GENEXUS_BAM"))
+    bam_path=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$sample_name*/$GENEXUS_BAM"))
+    num_bam_paths=${#bam_path[@]}
+    if [ $num_bam_paths != 1 ] ; then
+      echo "Expected 1 bam for sample '$sample_name' but found $num_bam_paths"
+      exit 1
+    fi
 
-BAM_PATHS=()
-for folder_id in "${FOLDER_IDENTIFIERS[@]}" ; do
-    BAM_PATHS+=($(ssh -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP" ls "$GENEXUS_REPORTS/*$folder_id*/$GENEXUS_BAM"))
-done
+    # assume sample names don't follow naming convention used by C-VIEW,
+    # so munge them into that format for compatibility
+    sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
+    echo "$sample_name" >> "$OUTPUT_SAMPLE_NAMES_FP"
 
-# download BAMs
-LEFT_CRUFT="$GENEXUS_REPORTS/AssayDev_"
-for bam_path in "${BAM_PATHS[@]}" ; do
-  temp_name=${bam_path/"${LEFT_CRUFT}"/}  # Remove the left part.
-  sample_name=${temp_name%%_SARS-CoV-2Insight*}  # Remove the right part.
+    sample_fname="$sample_name.$OUT_BAM_SUF"
+    local_path="$LOCAL_RUN_DIR/$sample_fname"
+    s3_bam_url="$UPLOAD_S3_BAM_FOLDER/$sample_fname"
 
-  # assume sample names don't follow naming convention used by C-VIEW,
-  # so munge them into that format for compatibility
-  sample_name="$sample_name"__NA__NA__"$RUN_NAME"__00X
-  echo "$sample_name" >> "$OUTPUT_SAMPLE_NAMES_FP"
+    # NB: "Expanding an array without an index only gives the first element"--
+    # and that is exactly the behavior we want here since array should have
+    # only one element, as is verified above
+    echo "Downloading: $bam_path to $local_path"
+    scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
+    scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path".bai "$local_path".bai
 
-  sample_fname="$sample_name.$OUT_BAM_SUF"
-  local_path="$LOCAL_RUN_DIR/$sample_fname"
-  s3_bam_url="$UPLOAD_S3_BAM_FOLDER/$sample_fname"
-
-  echo "Downloading: $bam_path to $local_path"
-  scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
-  scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path".bai "$local_path".bai
-
-  echo "$s3_bam_url" >> "$OUTPUT_S3_URLS_FP"
+    echo "$s3_bam_url" >> "$OUTPUT_S3_URLS_FP"
 done
 
 # TODO: Alternately, could capture S3 locations from stdio output of s3 cp
@@ -100,12 +103,18 @@ done
 #  Although would need some massaging, would also be more strictly accurate
 
 # make freyja metadata file and add to s3 outputs
+echo ""
 echo "Generating freyja-compliant metadata file"
 FREYJA_METADATA_FNAME="$RUN_NAME"_freyja_metadata.csv
 FREYJA_METADATA_FP="$LOCAL_DIR/$FREYJA_METADATA_FNAME"
 
 source $ANACONDADIR/activate cview_currents
 make_freyja_metadata "$OUTPUT_SAMPLE_NAMES_FP" "$SAMPLENAMES_FP" "$FREYJA_METADATA_FP"
+METADATA_EXIT_CODE=$?
+if [ $METADATA_EXIT_CODE != 0 ] ; then
+  echo "make_freyja_metadata failed; aborting upload to s3."
+  exit 1
+fi
 source $ANACONDADIR/deactivate
 
 FREYJA_METADATA_S3_URL="$UPLOAD_S3_FOLDER"/"$FREYJA_METADATA_FNAME"
