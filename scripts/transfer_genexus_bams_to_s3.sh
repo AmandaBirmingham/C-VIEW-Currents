@@ -88,6 +88,7 @@ for sample_name in "${SAMPLE_NAMES[@]}" ; do
     # NB: "Expanding an array without an index only gives the first element"--
     # and that is exactly the behavior we want here since array should have
     # only one element, as is verified above
+    echo ""
     echo "Downloading: $bam_path to $local_path"
     scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path" "$local_path"
     scp -i "$GENEXUS_RSA_FP" "$GENEXUS_USERNAME@$GENEXUS_IP:$bam_path".bai "$local_path".bai
@@ -112,17 +113,22 @@ METADATA_EXIT_CODE=$?
 if [ $METADATA_EXIT_CODE != 0 ] ; then
   echo "make_freyja_metadata failed; aborting upload to s3."
   exit 1
+else
+  # TODO: remove test echo
+  echo "metadata exit code: $METADATA_EXIT_CODE"
 fi
 source $ANACONDADIR/deactivate
 
 FREYJA_METADATA_S3_URL="$UPLOAD_S3_FOLDER"/"$FREYJA_METADATA_FNAME"
 echo "# metadata:$FREYJA_METADATA_S3_URL" >> "$OUTPUT_S3_URLS_FP"
 
+echo ""
 echo "Uploading local folder contents to s3"
 # upload metadata file to the run folder
 aws s3 cp "$FREYJA_METADATA_FP" "$FREYJA_METADATA_S3_URL"
 # upload all the local bam folder contents to the run's bam folder
 aws s3 cp "$LOCAL_RUN_DIR/" "$UPLOAD_S3_BAM_FOLDER" --recursive
 
+echo ""
 echo "Removing local folder: $LOCAL_RUN_DIR"
 rm -rf "$LOCAL_RUN_DIR"
