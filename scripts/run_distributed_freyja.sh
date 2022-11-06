@@ -10,6 +10,7 @@
 
 REPOS_DIR=/shared/workspace/software
 CVIEWCURRENTS_DIR="$REPOS_DIR"/cview_currents
+ANACONDADIR=/shared/workspace/software/anaconda3/bin
 FREYJA_DATA_DIR=/shared/workspace/software/anaconda3/envs/freyja-env/lib/python3.10/site-packages/freyja/data
 METADATA_LINE_PREFIX="# metadata:"
 CURR_DIR="$(dirname "$(realpath "$0")")"
@@ -153,6 +154,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
   sed -i "s|REPORT_RUN_S3_DIR|$REPORT_RUN_S3_DIR|g" "$NEW_SCRIPT_FP"
   sed -i "s|RUN_NAME|$RUN_NAME|g" "$NEW_SCRIPT_FP"
   sed -i "s|REPOS_DIR|$REPOS_DIR|g" "$NEW_SCRIPT_FP"
+  sed -i "s|ANACONDADIR|$ANACONDADIR|g" "$NEW_SCRIPT_FP"
 
   echo ""
   echo "Check on job progress by running:"
