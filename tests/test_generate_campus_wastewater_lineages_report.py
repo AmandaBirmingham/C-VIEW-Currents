@@ -213,10 +213,6 @@ class GenerateDashboardReportTest(FileTestCase):
             f"{self.dummy_dir}/dummy_cview_summary_report_rtl_" \
             f"wastewater_highcov_s3_urls.txt"
 
-        arg_list = [input_cview_summary_fp,
-                    "s3://dummy/dummy_cview_summary_all.csv",
-                    self.test_temp_dir]
-
         out_is_file = False
         out_equal = False
         output_fp = None
