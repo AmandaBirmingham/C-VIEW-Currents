@@ -64,7 +64,8 @@ generate_freyja_reports() {
   if [ ! -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file IS empty
     if [ "$REPORT_TYPE" == "campus" ]; then
       echo "Uploading $REPORT_NAME report to campus dashboard s3 bucket"
-      aws s3 cp "$WORKSPACE"/ "$CAMPUS_DASHBOARD_S3_DIR"/ --recursive --exclude "*" --include "*_campus_dashboard_report_*.csv"
+      # TODO: make it possible to send this to test s3 instead of live??
+      aws s3 cp "$WORKSPACE"/outputs/ "$CAMPUS_DASHBOARD_S3_DIR"/ --recursive --exclude "*" --include "*_campus_dashboard_report_*.csv"
     fi
   fi
 }
