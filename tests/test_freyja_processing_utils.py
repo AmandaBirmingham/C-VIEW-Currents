@@ -8,7 +8,7 @@ from src.freyja_processing_utils import _munge_lineage_label,\
     unmunge_lineage_label, reformat_labels_df, make_freyja_w_id_df, \
     validate_length, explode_sample_freyja_results, \
     explode_and_label_sample_freyja_results, get_freyja_results_fp, \
-    load_inputs_from_input_dir, OTHER_LINEAGE_LABEL
+    load_inputs_from_input_dir, OTHER_LINEAGE_LABEL, RECOMBINANTS_LINEAGE_LABEL
 
 
 class FreyjaProcessingUtilsTest(FileTestCase):
@@ -224,6 +224,25 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         real_out = _identify_label_for_aliased_lineage(
             an_input, lineage_to_label, self.lineage_to_parent_dict)
         self.assertEqual(expected_out, real_out)
+
+    def test__identify_label_for_aliased_lineage_specific_recombinant(self):
+        lineage_to_label = {"BA.5.": "BA.5",
+                            "B.1.1.529.": "BA.5",
+                            "XBB.": "XBB.X"}
+        an_input = "XBB.1.5"
+        expected_out = "XBB.X"
+        real_out = _identify_label_for_aliased_lineage(
+            an_input, lineage_to_label, self.lineage_to_parent_dict)
+        self.assertEqual(expected_out, real_out)
+
+    def test__identify_label_for_aliased_lineage_general_recombinant(self):
+        lineage_to_label = {"BA.5.": "BA.5",
+                            "B.1.1.529.": "BA.5",
+                            "BA.1.1": "BA.1.1"}
+        an_input = "XBB.1.5"
+        real_out = _identify_label_for_aliased_lineage(
+            an_input, lineage_to_label, self.lineage_to_parent_dict)
+        self.assertEqual(RECOMBINANTS_LINEAGE_LABEL, real_out)
 
     def test__make_lineage_labels_dict(self):
         reformatted_labels_dict = {

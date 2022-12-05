@@ -30,6 +30,7 @@ LINEAGE_LABEL_KEY = "lineage_label"
 VARIANT_LABEL_KEY = "variant_label"
 OTHER_LABEL = "Other"
 OTHER_LINEAGE_LABEL = "Other lineage"
+RECOMBINANTS_LINEAGE_LABEL = "Recombinants"
 ROLLUP_LABEL_KEY = "rollup_label"
 MUNGED_LINEAGE_LABEL_KEY = "munged_lineage_label"
 DEALIASED_MUNGED_LINEAGE_LABEL_KEY = "dealiased_munged_lineage_label"
@@ -165,6 +166,11 @@ def _identify_label_for_aliased_lineage(
             a_lineage, lineage_to_parents_dict)
         mapped_label = _identify_label_for_lineage(
             dealiased_lineage, lineage_to_label_dict, other_label)
+
+        # if dealiasing didn't lead to an identification, do one last check:
+        # is this a recombinant?
+        if mapped_label == other_label and dealiased_lineage.startswith("X"):
+            mapped_label = RECOMBINANTS_LINEAGE_LABEL
 
     return mapped_label
 
