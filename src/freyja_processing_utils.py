@@ -157,7 +157,7 @@ def _identify_label_for_lineage(a_lineage, lineage_to_label_dict, other_label):
 
 def _identify_label_for_aliased_lineage(
         a_lineage, lineage_to_label_dict, lineage_to_parents_dict,
-        other_label=OTHER_LINEAGE_LABEL):
+        other_label=OTHER_LINEAGE_LABEL, allow_recombinants=True):
     mapped_label = _identify_label_for_lineage(
         a_lineage, lineage_to_label_dict, other_label)
 
@@ -167,9 +167,10 @@ def _identify_label_for_aliased_lineage(
         mapped_label = _identify_label_for_lineage(
             dealiased_lineage, lineage_to_label_dict, other_label)
 
-        # if dealiasing didn't lead to an identification, do one last check:
-        # is this a recombinant?
-        if mapped_label == other_label and dealiased_lineage.startswith("X"):
+        # if dealiasing didn't lead to an identification, and we're willing to
+        # look for recombinants, do one last check:
+        if mapped_label == other_label and allow_recombinants and \
+                dealiased_lineage.startswith("X"):
             mapped_label = RECOMBINANTS_LINEAGE_LABEL
 
     return mapped_label
@@ -233,7 +234,7 @@ def _map_lineage_and_variant_labels(
     def _map_variant_label(a_lineage):
         return _identify_label_for_aliased_lineage(
             a_lineage, lineage_to_variant_dict, lineage_to_parents_dict,
-            other_label=OTHER_LABEL)
+            other_label=OTHER_LABEL, allow_recombinants=False)
 
     lineages_mask = exploded_df[COMPONENT_TYPE_KEY] == LINEAGE_COMP_TYPE
     temp_df = exploded_df.loc[lineages_mask, :].copy()

@@ -235,7 +235,7 @@ class FreyjaProcessingUtilsTest(FileTestCase):
             an_input, lineage_to_label, self.lineage_to_parent_dict)
         self.assertEqual(expected_out, real_out)
 
-    def test__identify_label_for_aliased_lineage_general_recombinant(self):
+    def test__identify_label_for_aliased_lineage_general_recombinant_allowed(self):
         lineage_to_label = {"BA.5.": "BA.5",
                             "B.1.1.529.": "BA.5",
                             "BA.1.1": "BA.1.1"}
@@ -243,6 +243,16 @@ class FreyjaProcessingUtilsTest(FileTestCase):
         real_out = _identify_label_for_aliased_lineage(
             an_input, lineage_to_label, self.lineage_to_parent_dict)
         self.assertEqual(RECOMBINANTS_LINEAGE_LABEL, real_out)
+
+    def test__identify_label_for_aliased_lineage_general_recombinant_not_allowed(self):
+        lineage_to_label = {"BA.5.": "BA.5",
+                            "B.1.1.529.": "BA.5",
+                            "BA.1.1": "BA.1.1"}
+        an_input = "XBB.1.5"
+        real_out = _identify_label_for_aliased_lineage(
+            an_input, lineage_to_label, self.lineage_to_parent_dict,
+            allow_recombinants=False)
+        self.assertEqual(OTHER_LINEAGE_LABEL, real_out)
 
     def test__make_lineage_labels_dict(self):
         reformatted_labels_dict = {
