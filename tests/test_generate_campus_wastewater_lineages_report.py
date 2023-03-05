@@ -140,8 +140,7 @@ class GenerateDashboardReportTest(FileTestCase):
         pandas.testing.assert_frame_equal(expected_out_df, output_df)
 
     def _test_generate_dashboard_report_df_error(
-            self, expected_msg, freyja_df=None, cview_df=None,
-            manhole_id_df=None):
+            self, expected_msg, freyja_df=None, cview_df=None):
 
         freyja_df = freyja_df if freyja_df is not None \
             else pandas.DataFrame(self.freyja_dict)
