@@ -118,13 +118,13 @@ class GenerateDashboardReportTest(FileTestCase):
                               'Omicron', 'Omicron', 'Omicron', 'Omicron',
                               'Omicron', 'Omicron', 'Omicron', 'Omicron',
                               'Omicron', 'Other', 'Omicron', 'Omicron'],
-            'labels_date': ['2022-07-11_22-32-05' for x in range(16)],
-            'freyja_run_date': ['2022-07-25_16-54-16' for x in range(16)],
+            'labels_datetime': ['2022-07-11 22:32:05' for x in range(16)],
+            'freyja_run_date': ['2022-07-25 16:54:16' for x in range(16)],
             'sequenced_pool_component_id': ['SEARCH-91606__E0003116__I07__220527_A01535_0137_BHY5VWDSX3__002' for x in range(8)] + ['SEARCH-91626__E0003116__M08__220527_A01535_0137_BHY5VWDSX3__002' for x in range(8)],
             'sample_id': ['5.15.22.AS061' for x in range(8)] + ['5.11.22.AS127' for x in range(8)],
             'sampler_id': ['AS061' for x in range(8)] + ['AS127' for x in range(8)],
-            'sample_collection_datetime': ['2022-05-15 00:00:00+00:00' for x in range(8)] + ['2022-05-11 00:00:00+00:00' for x in range(8)],
-            'sample_sequencing_datetime': ['2022-05-27 00:00:00+00:00' for x in range(16)],
+            'sample_collection_datetime': ['2022-05-15 00:00:00' for x in range(8)] + ['2022-05-11 00:00:00' for x in range(8)],
+            'sample_sequencing_datetime': ['2022-05-27 00:00:00' for x in range(16)],
             'sequencing_tech': ['Illumina' for x in range(16)]
         }
 
@@ -136,12 +136,11 @@ class GenerateDashboardReportTest(FileTestCase):
         output_df = generate_dashboard_report_df(
             cview_df, freyja_df, labels_df,
             self.lineage_to_parent_dict, self.curated_lineages,
-            "2022-07-11_22-32-05", "2022-07-25_16-54-16")
+            "2022-07-11 22:32:05", "2022-07-25 16:54:16")
         pandas.testing.assert_frame_equal(expected_out_df, output_df)
 
     def _test_generate_dashboard_report_df_error(
-            self, expected_msg, freyja_df=None, cview_df=None,
-            manhole_id_df=None):
+            self, expected_msg, freyja_df=None, cview_df=None):
 
         freyja_df = freyja_df if freyja_df is not None \
             else pandas.DataFrame(self.freyja_dict)

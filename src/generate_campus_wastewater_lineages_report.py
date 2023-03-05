@@ -13,7 +13,7 @@ SEQUENCING_TECH_KEY = "sequencing_tech"
 SAMPLER_ID_KEY = "sampler_id"
 LINEAGE_KEY = fpu.LINEAGE_COMP_TYPE
 LINEAGE_FRAC_KEY = f"{LINEAGE_KEY}_fraction"
-LABELS_DATE_KEY = "labels_date"
+LABELS_DATE_KEY = "labels_datetime"
 FREYJA_DATE_KEY = "freyja_run_date"
 BAM_S3_KEY = "trimmed_bam_s3"
 SOURCE_KEY = "source"
@@ -135,7 +135,10 @@ def _extract_date_from_filename(fp_string):
 
     re_match = re.match(run_date_regex, file_path.stem)
     run_date_str = re_match.group(1)
-    return run_date_str
+    pieces = run_date_str.split("_")
+    time_str = pieces[1].replace("-", ":")
+    cleaned_run_date_str = " ".join([pieces[0], time_str])
+    return cleaned_run_date_str
 
 
 def generate_dashboard_report_df(
@@ -145,6 +148,9 @@ def generate_dashboard_report_df(
 
     temp_df = _merge_wastewater_to_cview_summary(
         cview_summary_df, freyja_ww_df)
+    temp_df[COLLECT_DATE_KEY] = temp_df[COLLECT_DATE_KEY].str.split('+').str[0]
+    temp_df[RUN_DATE_KEY] = temp_df[RUN_DATE_KEY].str.split('+').str[0]
+
     temp_df_2 = _make_wastewater_w_id_df(temp_df)
     output_df = _explode_ww_results(
         temp_df_2, labels_df, lineage_to_parent_dict, curated_lineages,
