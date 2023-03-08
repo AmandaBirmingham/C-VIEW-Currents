@@ -36,6 +36,13 @@ if [[ ! "$REPORT_TYPE" =~ ^(search|campus)$ ]]; then
   exit 1
 fi
 
+# set up logging
+CMD_LOG_FNAME="$TIMESTAMP"_cmds.log
+exec 5>$CMD_LOG_FNAME
+BASH_XTRACEFD=5
+set -x
+
+# get version info
 cd $CVIEWCURRENTS_DIR || exit 1
 # see CVIEW show_version.sh for full description of this command
 VERSION_INFO=$( (git describe --tags && git log | head -n 1  && git checkout) | tr ' ' '_' | tr '\t' '_' | sed -z 's/\n/./g;s/.$/\n/')
@@ -174,3 +181,8 @@ echo "to update Freyja before this?  If not, cancel these jobs with"
 echo '  scancel -u $USER'  #NB: single quotes bc don't WANT $USER to expand
 echo "and update freyja before continuing!"
 echo ""  # spacer line
+
+# upload the command log to s3 and turn off logging
+aws s3 mv "$CMD_LOG_FNAME" "$OUTPUT_S3_DIR/$CMD_LOG_FNAME"
+#rm "$CMD_LOG_FNAME"
+set +x  # NB: "+" turns it off, "-" turns it on, not my fault bash is crazy
