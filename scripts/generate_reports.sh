@@ -8,9 +8,9 @@
 #   REPORT_TYPE
 #   OUTPUT_S3_DIR
 #   VERSION_INFO
+#   CAMPUS_DASHBOARD_S3_DIR
 
 ANACONDADIR=/shared/workspace/software/anaconda3/bin
-CAMPUS_DASHBOARD_S3_DIR="s3://ucsd-all/campus_dashboard"
 
 # Clear workspace directory if node is being reused
 WORKSPACE="$RUN_WORKSPACE/reports"
@@ -64,7 +64,6 @@ generate_freyja_reports() {
   if [ ! -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file IS empty
     if [ "$REPORT_TYPE" == "campus" ]; then
       echo "Uploading $REPORT_NAME report to campus dashboard s3 bucket"
-      # TODO: make it possible to send this to test s3 instead of live??
       aws s3 cp "$WORKSPACE"/outputs/ "$CAMPUS_DASHBOARD_S3_DIR"/ --recursive --exclude "*" --include "*_campus_dashboard_report_*.csv"
     fi
   fi

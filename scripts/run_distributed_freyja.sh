@@ -28,6 +28,7 @@ else
   SAMPLES_OUTPUT_S3_DIR="$OUTPUT_S3_DIR"/"$RUN_NAME"_samples
   AGG_OUTPUT_S3_DIR="$OUTPUT_S3_DIR"/"$RUN_NAME"_summary
   REPORT_RUN_S3_DIR="$S3_OUTPUT_BASE"/reports/"$REPORT_NAME"
+  CAMPUS_DASHBOARD_S3_DIR="$S3_OUTPUT_BASE"/campus_dashboard
   RUN_WORKSPACE="/scratch/$RUN_NAME/$TIMESTAMP"
 fi
 
@@ -137,7 +138,8 @@ if [[ "$REPORT_TYPE" == search ]]; then
               METADATA_S3URL=$METADATA_S3URL, \
               AGGREGATE_S3URL=$AGGREGATE_S3URL, \
               OUT_FNAME=$RELGROWTHRATE_FNAME, \
-              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
+              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR, \
+              CAMPUS_DASHBOARD_S3_DIR=$CAMPUS_DASHBOARD_S3_DIR" | sed 's/ //g') \
     -J growth_"$RUN_NAME" \
     -D /shared/logs \
     -c 32 \
@@ -174,6 +176,10 @@ if [[ "$REPORT_TYPE" == search ]]; then
   echo "   rm -rf $TMP_DIR"
 fi
 
+# upload (and remove--hence mv) the command log to s3 and turn off logging
+aws s3 mv "$CMD_LOG_FNAME" "$OUTPUT_S3_DIR/$CMD_LOG_FNAME"
+set +x  # NB: "+" turns it off, "-" turns it on, not my fault bash is crazy
+
 echo ""
 echo "REMINDER: Did you remember to run"
 echo "  bash $CURR_DIR/update_freyja.sh"
@@ -182,7 +188,3 @@ echo '  scancel -u $USER'  #NB: single quotes bc don't WANT $USER to expand
 echo "and update freyja before continuing!"
 echo ""  # spacer line
 
-# upload the command log to s3 and turn off logging
-aws s3 mv "$CMD_LOG_FNAME" "$OUTPUT_S3_DIR/$CMD_LOG_FNAME"
-#rm "$CMD_LOG_FNAME"
-set +x  # NB: "+" turns it off, "-" turns it on, not my fault bash is crazy
