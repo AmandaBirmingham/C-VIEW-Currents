@@ -7,25 +7,29 @@ import src.freyja_processing_utils as fpu
 
 SEQ_POOL_COMP_ID = "sequenced_pool_component_id"
 SAMPLE_ID_KEY = "sample_id"
+OUTPUT_SAMPLE_ID_KEY = "external_sample_name"
 COLLECT_DATE_KEY = "sample_collection_datetime"
 RUN_DATE_KEY = "sample_sequencing_datetime"
 SEQUENCING_TECH_KEY = "sequencing_tech"
-SAMPLER_ID_KEY = "sampler_id"
+SAMPLER_ID_KEY = "external_sampler_name"
 LINEAGE_KEY = fpu.LINEAGE_COMP_TYPE
 LINEAGE_FRAC_KEY = f"{LINEAGE_KEY}_fraction"
 LABELS_DATE_KEY = "labels_datetime"
-FREYJA_DATE_KEY = "freyja_run_date"
+FREYJA_DATE_KEY = "freyja_run_datetime"
 BAM_S3_KEY = "trimmed_bam_s3"
 SOURCE_KEY = "source"
 RTL_SOURCE_VALUE = "RTL"
 SPECIMEN_TYPE_KEY = "specimen_type"
 WASTEWATER_SPECIMEN_TYPE_VAL = "wastewater"
 TENX_COVG_KEY = "10_x_pc"
+EXCLUDED_SAMPLER_IDS = ["unlabelled", "unlabeled"]  # NB: all lowercased
 
 SAMPLE_COLS = [SEQ_POOL_COMP_ID, SAMPLE_ID_KEY, SAMPLER_ID_KEY,
                COLLECT_DATE_KEY, RUN_DATE_KEY, SEQUENCING_TECH_KEY]
 
 OUTPUT_COLS = SAMPLE_COLS.copy()
+OUTPUT_COLS = \
+    [OUTPUT_SAMPLE_ID_KEY if x == SAMPLE_ID_KEY else x for x in OUTPUT_COLS]
 OUTPUT_COLS.extend(
     [FREYJA_DATE_KEY, LABELS_DATE_KEY, LINEAGE_KEY, LINEAGE_FRAC_KEY,
      fpu.LINEAGE_LABEL_KEY, fpu.VARIANT_LABEL_KEY])
@@ -48,11 +52,38 @@ def _merge_wastewater_to_cview_summary(
 def _make_wastewater_w_id_df(wastewater_df):
     # sample id is of format
     # 12.8.AS015_V2
-    # where AS015 is the sampler id, which always looks like AS###
-    sampler_id_regex = r".*(AS\d{3}).*"
+    # where AS015 is the sampler id; however, it doesn't always begin with AS,
+    # (there's an ECEC01) and when there is an AS, it isn't always followed by
+    # digits (there's, e.g., an ASTHN001).
+    #
+    # NB for refactoring: there is independent code in cq-view that does this
+    # same job (while also pulling out date and sample_base) but expects more
+    # regularized sample ids because it doesn't have to deal with data as old
+    # as this system -_-
+
+    # Start by getting rid of anything that comes before the first letter:
+    # e.g., in 12.8.AS015_V2, get AS015_V2
+    first_letter_and_after_regex = r".*?([A-z].*)$"
     result_df = wastewater_df.copy()
-    result_df.loc[:, SAMPLER_ID_KEY] = \
-        result_df.loc[:, SAMPLE_ID_KEY].str.extract(sampler_id_regex)
+    sampler_id_info = \
+        result_df[SAMPLE_ID_KEY].str.extract(
+            first_letter_and_after_regex, expand=False)
+
+    # Now get rid of any additional description after a dot, then any
+    # additional description after an underscore
+    trimmed_sampler_id_info = sampler_id_info.str.split(".").str[0]
+    sampler_ids = trimmed_sampler_id_info.str.split("_").str[0]
+    result_df.loc[:, SAMPLER_ID_KEY] = sampler_ids
+    return result_df
+
+
+def _exclude_specified_and_nan_samplers(wastewater_w_id_df):
+    excluded_samplers_mask = \
+        wastewater_w_id_df[SAMPLER_ID_KEY].str.lower().isin(
+            EXCLUDED_SAMPLER_IDS)
+    is_nan_sampler_mask = wastewater_w_id_df[SAMPLER_ID_KEY].isna()
+    neither_mask = ~excluded_samplers_mask & ~is_nan_sampler_mask
+    result_df = wastewater_w_id_df.loc[neither_mask, :].copy()
     return result_df
 
 
@@ -152,9 +183,12 @@ def generate_dashboard_report_df(
     temp_df[RUN_DATE_KEY] = temp_df[RUN_DATE_KEY].str.split('+').str[0]
 
     temp_df_2 = _make_wastewater_w_id_df(temp_df)
+    temp_df_3 = _exclude_specified_and_nan_samplers(temp_df_2)
     output_df = _explode_ww_results(
-        temp_df_2, labels_df, lineage_to_parent_dict, curated_lineages,
+        temp_df_3, labels_df, lineage_to_parent_dict, curated_lineages,
         labels_date, freyja_run_date)
+    output_df.rename(
+        columns={SAMPLE_ID_KEY: OUTPUT_SAMPLE_ID_KEY}, inplace=True)
 
     return output_df
 
