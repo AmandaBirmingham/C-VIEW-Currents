@@ -118,7 +118,8 @@ REPORT_JOB_ID=$REPORT_JOB_ID:$(sbatch $AGGREGATE_DEPENDENCY_PARAM \
             SUMMARY_S3_DIR=$AGG_OUTPUT_S3_DIR, \
             METADATA_S3URL=$METADATA_S3URL, \
             REPORT_TYPE=$REPORT_TYPE, \
-            OUTPUT_S3_DIR=$REPORT_RUN_S3_DIR" | sed 's/ //g') \
+            OUTPUT_S3_DIR=$REPORT_RUN_S3_DIR, \
+            CAMPUS_DASHBOARD_S3_DIR=$CAMPUS_DASHBOARD_S3_DIR" | sed 's/ //g') \
   -J report_"$REPORT_NAME" \
   -D /shared/logs \
   -c 32 \
@@ -138,8 +139,7 @@ if [[ "$REPORT_TYPE" == search ]]; then
               METADATA_S3URL=$METADATA_S3URL, \
               AGGREGATE_S3URL=$AGGREGATE_S3URL, \
               OUT_FNAME=$RELGROWTHRATE_FNAME, \
-              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR, \
-              CAMPUS_DASHBOARD_S3_DIR=$CAMPUS_DASHBOARD_S3_DIR" | sed 's/ //g') \
+              OUTPUT_S3_DIR=$AGG_OUTPUT_S3_DIR" | sed 's/ //g') \
     -J growth_"$RUN_NAME" \
     -D /shared/logs \
     -c 32 \
