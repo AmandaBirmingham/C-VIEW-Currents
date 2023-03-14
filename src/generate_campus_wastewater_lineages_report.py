@@ -239,20 +239,22 @@ def _download_s3_item(item_s3_url, output_dir):
     return a_local_fp
 
 
-def _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir):
-    output_suffix = "_rtl_wastewater_highcov_s3_urls.txt"
+def _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir,
+                      source_name=None):
+    source_name = RTL_SOURCE_VALUE if source_name is None else source_name
+    output_suffix = f"_{source_name.lower()}_wastewater_highcov_s3_urls.txt"
 
     # NB: expects a *-all_summary-report_all.csv cview file
     cview_summary_df = pandas.read_csv(cview_summary_fp)
-    rtl_mask = cview_summary_df[SOURCE_KEY] == RTL_SOURCE_VALUE
+    source_mask = cview_summary_df[SOURCE_KEY] == source_name
     wastewater_mask = \
         cview_summary_df[SPECIMEN_TYPE_KEY] == WASTEWATER_SPECIMEN_TYPE_VAL
     gte_60pct_10x_coverage_mask = cview_summary_df[TENX_COVG_KEY] >= 60
-    rtl_wastewater_highcov_mask = \
-        rtl_mask & wastewater_mask & gte_60pct_10x_coverage_mask
+    source_wastewater_highcov_mask = \
+        source_mask & wastewater_mask & gte_60pct_10x_coverage_mask
 
     relevant_bam_urls = \
-        cview_summary_df.loc[rtl_wastewater_highcov_mask, BAM_S3_KEY]
+        cview_summary_df.loc[source_wastewater_highcov_mask, BAM_S3_KEY]
 
     output_dir_path = pathlib.Path(output_dir)
     cview_summary_path = pathlib.Path(cview_summary_fp)
@@ -274,10 +276,12 @@ def _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir):
 def get_bam_urls():
     cview_summary_s3_url = argv[1]
     output_dir = argv[2]
+    source_name = None if len(argv) < 4 else argv[4]
 
     cview_summary_fp = _download_s3_item(cview_summary_s3_url, output_dir)
 
-    _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir)
+    _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir,
+                      source_name)
 
 
 def generate_reports():
