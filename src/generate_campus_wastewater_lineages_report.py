@@ -276,7 +276,7 @@ def _extract_bam_urls(cview_summary_fp, cview_summary_s3_url, output_dir,
 def get_bam_urls():
     cview_summary_s3_url = argv[1]
     output_dir = argv[2]
-    source_name = None if len(argv) < 4 else argv[4]
+    source_name = None if len(argv) < 4 else argv[3]
 
     cview_summary_fp = _download_s3_item(cview_summary_s3_url, output_dir)
 
