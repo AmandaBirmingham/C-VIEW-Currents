@@ -56,6 +56,8 @@ generate_freyja_reports() {
   elif [ "$REPORT_TYPE" == "campus" ]; then
     make_campus_reports "$WORKSPACE"/inputs "$WORKSPACE"/outputs
     echo -e "make_campus_reports exit code: $?" >> "$WORKSPACE/$REPORT_NAME"_reports.exit.log
+  elif [ "$REPORT_TYPE" == "none" ]; then
+    echo "No report generated because report type is 'none'"
   fi
 
   # Gather error code(s), if any

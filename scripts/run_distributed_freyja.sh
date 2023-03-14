@@ -32,8 +32,8 @@ else
   RUN_WORKSPACE="/scratch/$RUN_NAME/$TIMESTAMP"
 fi
 
-if [[ ! "$REPORT_TYPE" =~ ^(search|campus)$ ]]; then
-  echo "Error: REPORT_TYPE must be one of 'search' or 'campus'"
+if [[ ! "$REPORT_TYPE" =~ ^(search|campus|none)$ ]]; then
+  echo "Error: REPORT_TYPE must be one of 'search', 'campus', or 'none'"
   exit 1
 fi
 
