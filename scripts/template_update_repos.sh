@@ -50,7 +50,8 @@ aws s3 cp REPORT_RUN_S3_DIR/outputs/ TMP_DIR/ \
 
 cd REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego || exit
 git checkout master
-git pull upstream master  # get any updates from andersen lab (original) repo
+git pull # get any updates from fork of original repo, then ...
+git merge upstream/master  # add any updates from andersen lab (original) repo
 
 mv TMP_DIR/*.csv REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego
 
