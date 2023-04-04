@@ -1,3 +1,4 @@
+import os.path
 from sys import argv
 import pathlib
 import pandas
@@ -48,21 +49,13 @@ def _generate_sample_row(
 
 
 def generate_dashboard_report_df(
-        dashboard_labels_df, lineage_to_parent_dict, curated_lineages,
-        report_location, previous_report_df, freyja_ww_df, output_dir=None):
-
-    freyja_w_id_df = fpu.make_freyja_w_id_df(freyja_ww_df, SAMPLE_ID_KEY)
-    site_labels_df, site_prefix = fpu.reformat_labels_df(
-        dashboard_labels_df, lineage_to_parent_dict, report_location)
+        site_labels_df, lineage_to_parent_dict, curated_lineages,
+        sample_ids, previous_report_df, freyja_w_id_df, output_dir=None):
 
     required_cols = [DATE_KEY]
     required_cols.extend(list(site_labels_df.loc[:, fpu.ROLLUP_LABEL_KEY]))
     new_dfs_to_concat = [pandas.DataFrame(columns=required_cols)]
 
-    site_prefix_mask = freyja_w_id_df[SAMPLE_ID_KEY].str.lstrip(
-        '0123456789.').str.startswith(site_prefix, na=False)
-    sample_ids = list(pandas.unique(
-        freyja_w_id_df.loc[site_prefix_mask, SAMPLE_ID_KEY]))
     sample_ids = sorted(sample_ids)
     for curr_sample_id in sample_ids:
         curr_labeled_df, sample_df = \
@@ -93,8 +86,12 @@ def generate_dashboard_report_df(
     new_df.sort_values(by=[temp_col_key], inplace=True)
     new_df.drop([temp_col_key], axis=1, errors="ignore", inplace=True)
 
-    # (pandas will add NaNs in any cols in old report but not this one)
-    output_df = pandas.concat([previous_report_df, new_df], ignore_index=True)
+    if previous_report_df:
+        # (pandas will add NaNs in any cols in old report but not this one)
+        output_df = pandas.concat(
+            [previous_report_df, new_df], ignore_index=True)
+    else:
+        output_df = new_df
     output_df.reset_index(inplace=True, drop=True)
     output_df.fillna(0, inplace=True)
 
@@ -104,6 +101,7 @@ def generate_dashboard_report_df(
 def generate_dashboard_reports(arg_list):
     input_dir = arg_list[1]
     output_dir = arg_list[2]
+    alt_sample_id_key = None if len(arg_list) < 4 else arg_list[3]
 
     exploded_out_dir = output_dir
     if arg_list[-1] == "suppress":
@@ -115,14 +113,21 @@ def generate_dashboard_reports(arg_list):
     labels_to_aggregate_df, lineage_to_parents_dict, \
         curated_lineages, freyja_ww_df = fpu.load_inputs_from_input_dir(
             input_dir)
+
+    freyja_ww_w_id_df = fpu.make_freyja_w_id_df(freyja_ww_df, SAMPLE_ID_KEY)
+    if alt_sample_id_key:
+        freyja_ww_w_id_df = _mine_metadata_from_cview_summary(
+            freyja_ww_w_id_df, input_dir, alt_sample_id_key)
+    # endif there is an alt sample id key
+
     # TODO: this should go away once date column names are rationalized
-    freyja_ww_df.rename(
+    freyja_ww_w_id_df.rename(
         columns={fpu.METADATA_DATE_KEY: DATE_KEY}, inplace=True)
 
     # Apply QC threshold to freyja results, extract and write out failed ones
     freyja_fails_fp = fpu.make_fails_fp(input_dir, output_dir)
-    freyja_passing_ww_df, _ = fpu.extract_qc_failing_freyja_results(
-        freyja_ww_df, freyja_fails_fp)
+    freyja_passing_ww_w_id_df, _ = fpu.extract_qc_failing_freyja_results(
+        freyja_ww_w_id_df, freyja_fails_fp)
 
     labels_fp = fpu.get_labels_fp(input_dir)
     labels_df = pandas.read_csv(labels_fp)
@@ -132,19 +137,74 @@ def generate_dashboard_reports(arg_list):
         curr_prev_report_fp = f"{input_dir}/{curr_report_fname}"
         curr_output_fp = f"{output_dir}/{curr_report_fname}"
 
-        curr_prev_report_df = pandas.read_csv(curr_prev_report_fp)
-        previous_report_fstem = pathlib.PurePath(curr_prev_report_fp).stem
-        report_location = previous_report_fstem.split("_")[0]
+        if os.path.exists(curr_prev_report_fp):
+            curr_prev_report_df = pandas.read_csv(curr_prev_report_fp)
+        else:
+            print(f"WARNING: No pre-existing file for '{curr_location}' "
+                  f"(expecting' {curr_prev_report_fp}')")
+            curr_prev_report_df = None
 
-        output_df = generate_dashboard_report_df(
-            labels_to_aggregate_df, lineage_to_parents_dict, curated_lineages,
-            report_location, curr_prev_report_df, freyja_passing_ww_df,
-            exploded_out_dir)
+        output_df = _generate_dashboard_report_for_location(
+            curr_location, curr_prev_report_df,
+            labels_to_aggregate_df, lineage_to_parents_dict,
+            freyja_passing_ww_w_id_df, curated_lineages, exploded_out_dir)
         output_df.to_csv(curr_output_fp, index=False)
         output_fps.append(curr_output_fp)
     # next location
 
     return output_fps
+
+
+def _mine_metadata_from_cview_summary(
+        freyja_ww_w_id_df, input_dir, alt_sample_id_key):
+    cview_id = "sequenced_pool_component_id"
+    freyja_ww_w_id_df.rename(columns={SAMPLE_ID_KEY: cview_id}, inplace=True)
+
+    # get the cview metadata
+    cview_summary_fp = fpu.get_single_file_by_suffix(
+        input_dir, "_summary-report_all.csv")
+    cview_summary_df = pandas.read_csv(cview_summary_fp)
+    partial_cview_summary_df = \
+        cview_summary_df.loc[:, [cview_id,
+                                 alt_sample_id_key,
+                                 fpu.METADATA_DATE_KEY]].copy()
+    partial_cview_summary_df[fpu.METADATA_DATE_KEY] = \
+        pandas.to_datetime(
+            partial_cview_summary_df[fpu.METADATA_DATE_KEY]).dt.strftime(
+            '%m/%d/%Y')
+
+    # merge it with the freyja ww df
+    freyja_ww_w_id_df = freyja_ww_w_id_df.merge(
+        partial_cview_summary_df, on=cview_id,
+        how="left", validate="1:1")
+
+    # replace the default sample id with the alt sample id
+    freyja_ww_w_id_df[SAMPLE_ID_KEY] = \
+        freyja_ww_w_id_df[alt_sample_id_key]
+
+    return freyja_ww_w_id_df
+
+
+def _generate_dashboard_report_for_location(curr_location, curr_prev_report_df,
+        labels_to_aggregate_df, lineage_to_parents_dict,
+        freyja_w_id_df, curated_lineages, exploded_out_dir):
+
+    site_labels_df, site_prefix = fpu.reformat_labels_df(
+        labels_to_aggregate_df, lineage_to_parents_dict, curr_location)
+
+    included_mask = [True] * len(freyja_w_id_df.index)  # include everything
+    if site_prefix:
+        included_mask = freyja_w_id_df[SAMPLE_ID_KEY].str.lstrip(
+            '0123456789.').str.startswith(site_prefix, na=False)
+    sample_ids = list(pandas.unique(
+        freyja_w_id_df.loc[included_mask, SAMPLE_ID_KEY]))
+
+    output_df = generate_dashboard_report_df(
+        site_labels_df, lineage_to_parents_dict, curated_lineages,
+        sample_ids, curr_prev_report_df, freyja_w_id_df,
+        exploded_out_dir)
+
+    return output_df
 
 
 def generate_freyja_metadata(arg_list):
@@ -190,3 +250,13 @@ def make_freyja_metadata():
 
 def generate_reports():
     generate_dashboard_reports(argv)
+
+
+if __name__ == "__main__":
+    # TODO: remove hardcoded arguments!
+    arglist = ["",
+               "/Users/abirmingham/Desktop/2023-03-14_22-33-14_2023-02-18_01-21-40-all_summary-report_all_sfo_ww_wastewater_highcov_wo_err_bams_none/inputs",
+               "/Users/abirmingham/Desktop/2023-03-14_22-33-14_2023-02-18_01-21-40-all_summary-report_all_sfo_ww_wastewater_highcov_wo_err_bams_none/outputs",
+               "sample_id"
+               ]
+    generate_dashboard_reports(arglist)
