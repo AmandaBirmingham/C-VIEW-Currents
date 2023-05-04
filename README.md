@@ -300,7 +300,7 @@ s3://ucsd-rtl-test/221010_WW/221010_WW_bam/10.7.22.SBOCT06.R2__NA__NA__221010_WW
    3. Kick off the pipeline by running the `run_distributed_freyja.sh` script with the following positional arguments:
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/221013_WW_s3_urls.txt`)
       2. The run name (e.g., `221013_WW`)
-      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja` and note this path **must not** have a slash on the end of it)
       4. The report type to generate (either `search` or `campus`)
 
 ```
@@ -405,7 +405,7 @@ bash update_freyja.sh
    1. Run the `run_distributed_freyja.sh` script with the following positional arguments:
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`)
       2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
-      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja`)
+      3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja` and note this path **must not** have a slash on the end of it)
       4. The report type `campus`
    2. Check the results upload
       1. A new file holding the latest report results appears in the `s3://ucsd-rtl-test/campus_dashboard/` bucket
