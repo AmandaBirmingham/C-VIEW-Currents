@@ -1,13 +1,18 @@
 # get the freyja metadata file
 aws s3 cp METADATA_S3URL TMP_DIR/
 
-# get the aggregated and (if present) relgrowthrate files and their log(s)
-aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/error_logs \
+# get the aggregated and (if present) relgrowthrate output files
+aws s3 cp SUMMARY_S3_DIR/ TMP_DIR \
+  --recursive \
+  --exclude "*" \
+  --include "*.csv" \
+  --include "*.tsv"
+
+# get the aggregated and relgrowthrate error log(s)
+  aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/error_logs \
   --recursive \
   --exclude "*" \
   --include "*error.log" \
-  --include "*.csv" \
-  --include "*.tsv"
 
 # get the report error log(s)
 aws s3 cp REPORT_RUN_S3_DIR/ TMP_DIR/error_logs \
