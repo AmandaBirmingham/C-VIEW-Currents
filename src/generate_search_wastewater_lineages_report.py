@@ -86,7 +86,7 @@ def generate_dashboard_report_df(
     new_df.sort_values(by=[temp_col_key], inplace=True)
     new_df.drop([temp_col_key], axis=1, errors="ignore", inplace=True)
 
-    if previous_report_df:
+    if previous_report_df is not None:
         # (pandas will add NaNs in any cols in old report but not this one)
         output_df = pandas.concat(
             [previous_report_df, new_df], ignore_index=True)
@@ -101,11 +101,11 @@ def generate_dashboard_report_df(
 def generate_dashboard_reports(arg_list):
     input_dir = arg_list[1]
     output_dir = arg_list[2]
-    alt_sample_id_key = None if len(arg_list) < 4 else arg_list[3]
-
     exploded_out_dir = output_dir
     if arg_list[-1] == "suppress":
         exploded_out_dir = None
+        arg_list.pop(-1)
+    alt_sample_id_key = None if len(arg_list) < 4 else arg_list[3]
 
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -114,20 +114,21 @@ def generate_dashboard_reports(arg_list):
         curated_lineages, freyja_ww_df = fpu.load_inputs_from_input_dir(
             input_dir)
 
-    freyja_ww_w_id_df = fpu.make_freyja_w_id_df(freyja_ww_df, SAMPLE_ID_KEY)
-    if alt_sample_id_key:
-        freyja_ww_w_id_df = _mine_metadata_from_cview_summary(
-            freyja_ww_w_id_df, input_dir, alt_sample_id_key)
-    # endif there is an alt sample id key
-
     # TODO: this should go away once date column names are rationalized
-    freyja_ww_w_id_df.rename(
+    freyja_ww_df.rename(
         columns={fpu.METADATA_DATE_KEY: DATE_KEY}, inplace=True)
 
     # Apply QC threshold to freyja results, extract and write out failed ones
     freyja_fails_fp = fpu.make_fails_fp(input_dir, output_dir)
-    freyja_passing_ww_w_id_df, _ = fpu.extract_qc_failing_freyja_results(
-        freyja_ww_w_id_df, freyja_fails_fp)
+    freyja_passing_ww_df, _ = fpu.extract_qc_failing_freyja_results(
+        freyja_ww_df, freyja_fails_fp)
+
+    # Now extract sample_id info into the df
+    freyja_passing_ww_w_id_df = fpu.make_freyja_w_id_df(freyja_passing_ww_df, SAMPLE_ID_KEY)
+    if alt_sample_id_key:
+        freyja_passing_ww_w_id_df = _mine_metadata_from_cview_summary(
+            freyja_passing_ww_w_id_df, input_dir, alt_sample_id_key)
+    # endif there is an alt sample id key
 
     labels_fp = fpu.get_labels_fp(input_dir)
     labels_df = pandas.read_csv(labels_fp)
