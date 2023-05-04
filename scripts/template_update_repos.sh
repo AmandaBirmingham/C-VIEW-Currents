@@ -2,7 +2,7 @@
 aws s3 cp METADATA_S3URL TMP_DIR/
 
 # get the aggregated and (if present) relgrowthrate files and their log(s)
-aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/ \
+aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/error_logs \
   --recursive \
   --exclude "*" \
   --include "*error.log" \
@@ -10,13 +10,13 @@ aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/ \
   --include "*.tsv"
 
 # get the report error log(s)
-aws s3 cp REPORT_RUN_S3_DIR/ TMP_DIR/ \
+aws s3 cp REPORT_RUN_S3_DIR/ TMP_DIR/error_logs \
   --recursive \
   --exclude "*" \
   --include "*error.log"
 
 echo "Gathering error logs"
-cat TMP_DIR/*error.log > TMP_DIR/RUN_NAME_repos.error.log
+cat TMP_DIR/error_logs/*error.log > TMP_DIR/RUN_NAME_repos.error.log
 
 # if any errors happened upstream of here, the results shouldn't be pushed
 # to the repositories
