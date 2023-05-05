@@ -355,10 +355,13 @@ rm -rf /tmp/cview-currents-JdsVoaNirv
 The pipeline is run from the head node of the cluster, via the following steps:
 
 1. Generate a file of relevant bam S3 urls
-   1. Capture the S3 url of the C-VIEW `*_summary-report_all.csv` to search for inputs
-   2. Run `get_cview_bam_urls` with the following positional arguments:
+   2. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
+      1. If you want to process all campus samples ever, use the summary report from a cumulative run
+      2. If you want to process only campus samples from a particular run, use the summary report from that run
+   3. Run `get_cview_bam_urls` with the following positional arguments:
       1. The C-VIEW report S3 URL captured above (e.g., `s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv`)
       2. The local directory in which the output file should be placed (e.g., `/shared/temp`)
+      3. If *and only if* you want to extract samples for a source *OTHER* than campus, you may pass an optional third argument containing that source (e.g., `SFO_WW`)
 
 ```
 # Example:
@@ -407,9 +410,10 @@ bash update_freyja.sh
       2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
       3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja` and note this path **must not** have a slash on the end of it)
       4. The report type `campus`
-   2. Check the results upload
-      1. A new file holding the latest report results appears in the `s3://ucsd-rtl-test/campus_dashboard/` bucket
-
+   2. Check results, stored in `<s3_directory>/freyja/reports/<freyja_processing_timestamp>_<bam_urls_filename_filestem>_campus/outputs/` (where `<bam_urls_filename_filestem>` for the above example is `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls`)
+      1. Look through any Freyja QC failures, which (if any exist) are stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_qc_fails.tsv` 
+      2. Look through the report output, which is stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_aggregated_campus_dashboard_report_<report_processing_timestamp>.csv`
+      3. Assuming the QC failures are not worrisome, manually copy the report output to the `campus_dashboard` folder in the s3 bucket being used
 ```
 # Example:
 
