@@ -8,9 +8,9 @@
 #   REPORT_TYPE
 #   OUTPUT_S3_DIR
 #   VERSION_INFO
+#   CAMPUS_DASHBOARD_S3_DIR
 
 ANACONDADIR=/shared/workspace/software/anaconda3/bin
-CAMPUS_DASHBOARD_S3_DIR="s3://ucsd-all/campus_dashboard"
 
 # Clear workspace directory if node is being reused
 WORKSPACE="$RUN_WORKSPACE/reports"
@@ -56,18 +56,24 @@ generate_freyja_reports() {
   elif [ "$REPORT_TYPE" == "campus" ]; then
     make_campus_reports "$WORKSPACE"/inputs "$WORKSPACE"/outputs
     echo -e "make_campus_reports exit code: $?" >> "$WORKSPACE/$REPORT_NAME"_reports.exit.log
+  elif [ "$REPORT_TYPE" == "none" ]; then
+    echo "No report generated because report type is 'none'"
   fi
 
   # Gather error code(s), if any
   grep -v "exit code: 0" "$WORKSPACE/$REPORT_NAME"_reports.exit.log | head -n 1 >> "$WORKSPACE/$REPORT_NAME"_reports.error.log
 
-  if [ ! -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file IS empty
-    if [ "$REPORT_TYPE" == "campus" ]; then
-      echo "Uploading $REPORT_NAME report to campus dashboard s3 bucket"
-      # TODO: make it possible to send this to test s3 instead of live??
-      aws s3 cp "$WORKSPACE"/outputs/ "$CAMPUS_DASHBOARD_S3_DIR"/ --recursive --exclude "*" --include "*_campus_dashboard_report_*.csv"
-    fi
-  fi
+# TODO: decide if want to modify and put back
+#  Removed bc want to put file in s3://whatever-bucket/campus_dashboard/ucsd but
+#  current way of constructing $CAMPUS_DASHBOARD_S3_DIR would end up putting it
+#  in s3://whatever-bucket/freyja/campus_dashboard/ucsd since usual top-level
+#  s3 input is s3://whatever-bucket/freyja
+#  if [ ! -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file IS empty
+#    if [ "$REPORT_TYPE" == "campus" ]; then
+#      echo "Uploading $REPORT_NAME report to campus dashboard s3 bucket"
+#      aws s3 cp "$WORKSPACE"/outputs/ "$CAMPUS_DASHBOARD_S3_DIR"/ --recursive --exclude "*" --include "*_campus_dashboard_report_*.csv"
+#    fi
+#  fi
 }
 
 { time ( generate_freyja_reports ) ; } > "$WORKSPACE/$REPORT_NAME"_reports.log 2>&1

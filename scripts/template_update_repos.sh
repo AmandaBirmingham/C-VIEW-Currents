@@ -1,22 +1,27 @@
 # get the freyja metadata file
 aws s3 cp METADATA_S3URL TMP_DIR/
 
-# get the aggregated and (if present) relgrowthrate files and their log(s)
-aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/ \
+# get the aggregated and (if present) relgrowthrate output files
+aws s3 cp SUMMARY_S3_DIR/ TMP_DIR \
   --recursive \
   --exclude "*" \
-  --include "*error.log" \
   --include "*.csv" \
   --include "*.tsv"
 
+# get the aggregated and relgrowthrate error log(s)
+  aws s3 cp SUMMARY_S3_DIR/ TMP_DIR/error_logs \
+  --recursive \
+  --exclude "*" \
+  --include "*error.log" \
+
 # get the report error log(s)
-aws s3 cp REPORT_RUN_S3_DIR/ TMP_DIR/ \
+aws s3 cp REPORT_RUN_S3_DIR/ TMP_DIR/error_logs \
   --recursive \
   --exclude "*" \
   --include "*error.log"
 
 echo "Gathering error logs"
-cat TMP_DIR/*error.log > TMP_DIR/RUN_NAME_repos.error.log
+cat TMP_DIR/error_logs/*error.log > TMP_DIR/RUN_NAME_repos.error.log
 
 # if any errors happened upstream of here, the results shouldn't be pushed
 # to the repositories
@@ -50,7 +55,8 @@ aws s3 cp REPORT_RUN_S3_DIR/outputs/ TMP_DIR/ \
 
 cd REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego || exit
 git checkout master
-git pull upstream master  # get any updates from andersen lab (original) repo
+git pull # get any updates from fork of original repo, then ...
+git merge upstream/master  # add any updates from andersen lab (original) repo
 
 mv TMP_DIR/*.csv REPOS_DIR/SARS-CoV-2_WasteWater_San-Diego
 

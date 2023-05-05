@@ -196,23 +196,34 @@ def _make_variant_labels_dict(allowed_labels_df, curated_lineages):
     variants_of_interest = list(
         allowed_labels_df.loc[variants_mask, ROLLUP_LABEL_KEY])
 
-    found_variants = []
+    missing_variants = variants_of_interest.copy()
     lineage_to_variant_dict = {}
     for curr_curated_lin in curated_lineages:
         curr_who_name = curr_curated_lin.get("who_name")
         if curr_who_name:
-            if curr_who_name in variants_of_interest:
-                found_variants.append(curr_who_name)
+            vois_in_name = [x for x in variants_of_interest if x in curr_who_name]
+            if len(vois_in_name) > 1:
+                raise ValueError(f"Who name {curr_who_name} maps to multiple "
+                                 f"variants of interest: {vois_in_name}")
+            if len(vois_in_name) == 1:
+                found_variant_of_interest = vois_in_name[0]
+                if found_variant_of_interest in missing_variants:
+                    missing_variants.remove(found_variant_of_interest)
                 pango_descendants = curr_curated_lin["pango_descendants"]
                 for curr_descendant in pango_descendants:
                     if curr_descendant in lineage_to_variant_dict:
-                        raise ValueError(
-                            f"The lineage '{curr_descendant}' is assigned to "
-                            f"lineage '{curr_who_name}' and lineage "
-                            f"'{lineage_to_variant_dict[curr_descendant]}'")
-                    lineage_to_variant_dict[curr_descendant] = curr_who_name
+                        existing_variant = \
+                            lineage_to_variant_dict[curr_descendant]
+                        if found_variant_of_interest != existing_variant:
+                            raise ValueError(
+                                f"The lineage '{curr_descendant}' is "
+                                f"assigned to lineage "
+                                f"'{found_variant_of_interest}' and lineage "
+                                f"'{existing_variant}'")
+                    lineage_to_variant_dict[curr_descendant] = \
+                        found_variant_of_interest
 
-    if set(variants_of_interest) != set(found_variants):
+    if len(missing_variants) > 0:
         raise ValueError("Not all variants of interest found in "
                          "curated lineages")
 
