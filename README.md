@@ -171,7 +171,8 @@ pcluster create-cluster \
    3. Configure Github ssh access
       1. Get the RSA key-pair (both public and private) for github user's ssh key
       2. Copy the key-pair into `/home/ubuntu/.ssh/<keyname>`
-      3. Modify the `.bashrc` file to add the public key to the ssh-agent on login
+      3. Ensure the private key has limited permissions by running `chmod 600 /home/ubuntu/.ssh/<keyname>` 
+      4. Modify the `.bashrc` file to add the public key to the ssh-agent on login
          1. Run `nano ~/.bashrc` to edit the `.bashrc` file
          2. At the bottom of the file, paste in the following three lines:
             1. `# C-VIEW Currents addition: add CviewMachineAcct ssh to ssh agent`
@@ -179,14 +180,14 @@ pcluster create-cluster \
             3. `ssh-add /home/ubuntu/.ssh/id_ed25519_CviewMachineAcct`
          3. Save the changes and log out of the cluster
          4. Log back so the changes take effect
-      4. Validate ssh access to github is working
+      5. Validate ssh access to github is working
          1. Run `ssh -T git@github.com`
          2. Confirm the addition of github.com to the list of known hosts
          3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
    4. Configure `gh cli` access
-      2. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents` to activate the cview_currents environment
-      3. Run `gh auth login`
-      4. Choose `GitHub.com` as the account to log into
+      1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents` to activate the cview_currents environment
+      2. Run `gh auth login`
+      3. Choose `GitHub.com` as the account to log into
       5. Choose `SSH` as the protocol
       6. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
       7. Title the key `<keyname>`
