@@ -184,16 +184,17 @@ pcluster create-cluster \
          1. Run `ssh -T git@github.com`
          2. Confirm the addition of github.com to the list of known hosts
          3. Access is validated if you receive a message stating `You've successfully authenticated, but GitHub does not provide shell access`
-   4. Configure `gh cli` access
+   4. Configure `cli` access for `gh`
       1. Run `source /shared/workspace/software/anaconda3/bin/activate cview_currents` to activate the cview_currents environment
       2. Run `gh auth login`
       3. Choose `GitHub.com` as the account to log into
-      5. Choose `SSH` as the protocol
-      6. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
-      7. Title the key `<keyname>`
-      8. Open a browser and *ensure that you are logged in with your chosen github account!*
-      9. As directed by the `gh` auth process, open the url `https://github.com/login/device`
-      10. Paste in the one-time code provided by the process and confirm access
+      4. Choose `SSH` as the protocol
+      5. Choose `/home/ubuntu/.ssh/<keyname>` as the ssh key
+      6. Title the key `<keyname>`
+      7. Open a browser and *ensure that you are logged in with your chosen github account!*
+      8. As directed by the `gh` auth process, open the url `https://github.com/login/device`
+      9. Paste in the one-time code provided by the process and confirm access
+         1. If you receive an "[HTTP 422 error key is already in use](https://github.com/cli/cli/discussions/6271)" error message, this is ok, as described in the link
    5. Clone the SEARCH repos (note that this must come AFTER configuring Github ssh access)
       1. Run `cd /shared/workspace/software`
       2. Run `git clone git@github.com:joshuailevy/SD-Freyja-Outputs.git` to clone the (private) repo for the raw results
@@ -218,9 +219,10 @@ To configure automated Genexus access:
       3. If you have not been provided with a Genexus access key-pair, provide them with your RSA public key (created in step 1) for placement on the instrument
    3. SSH onto the C-VIEW Currents cluster head node and
       1. Copy the RSA key-pair into a known location (such as a folder named `~/genexus/`)
-      2. Find the two `transfer_genexus_bams_*` scripts in `/shared/workflow/software/cview_currents/scripts`
-      3. For each script, set the `GENEXUS_USERNAME` and `GENEXUS_IP` variables to the values received in configuration step 1.1
-      4. Set the `GENEXUS_RSA_FP` variable to the path to the RSA private key
+      2. Ensure the private key has limited permissions by running, e.g., `chmod 600 ~/genexus/<keyname>` 
+      3. Find the two `transfer_genexus_bams_*` scripts in `/shared/workflow/software/cview_currents/scripts`
+      4. For each script, set the `GENEXUS_USERNAME` and `GENEXUS_IP` variables to the values received in configuration step 1.1
+      5. Set the `GENEXUS_RSA_FP` variable to the path to the RSA private key
          1. The default value is `~/genexus/id_rsa`
       
 ## Running the SEARCH Pipeline
