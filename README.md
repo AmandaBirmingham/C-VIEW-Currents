@@ -272,7 +272,7 @@ bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-rtl-test 221013_WW /s
 ```
 
 3. Update Freyja to get the latest barcodes and lineages
-   1. Run the `update_freyja.sh` script; no arguments are needed
+   1. Run `bash update_freyja.sh` in the `scripts` directory; no arguments are needed
    2. Run `squeue` to check its progress; do not continue until the queue is empty
 
 ```
@@ -397,7 +397,7 @@ s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_r
 
 
 3. Update Freyja to get the latest barcodes and lineages
-   1. Run the `update_freyja.sh` script; no arguments are needed
+   1. Run `bash update_freyja.sh` in the `scripts` directory; no arguments are needed
    2. Run `squeue` to check its progress; do not continue until the queue is empty
    
 ```
