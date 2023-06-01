@@ -358,7 +358,8 @@ rm -rf /tmp/cview-currents-JdsVoaNirv
 The pipeline is run from the head node of the cluster, via the following steps:
 
 1. Generate a file of relevant bam S3 urls
-   2. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
+
+   1. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
       1. If you want to process all campus samples ever, use the summary report from a cumulative run
       2. If you want to process only campus samples from a particular run, use the summary report from that run
    3. Run `get_cview_bam_urls` with the following positional arguments:
