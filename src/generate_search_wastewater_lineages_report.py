@@ -163,7 +163,7 @@ def _mine_metadata_from_cview_summary(
 
     # get the cview metadata
     cview_summary_fp = fpu.get_single_file_by_suffix(
-        input_dir, "_summary-report_all.csv")
+        input_dir, "_summary-report_*.csv")
     cview_summary_df = pandas.read_csv(cview_summary_fp)
     partial_cview_summary_df = \
         cview_summary_df.loc[:, [cview_id,
