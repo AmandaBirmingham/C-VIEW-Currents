@@ -355,31 +355,44 @@ rm -rf /tmp/cview-currents-JdsVoaNirv
 
 ## Running the Campus Pipeline
 
-The pipeline is run from the head node of the cluster, via the following steps:
+This pipeline is used for UCSD campus data and UCSF data. The pipeline is run from the head node of the cluster, via the following steps:
 
 1. Generate a file of relevant bam S3 urls
-   2. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
-      1. If you want to process all campus samples ever, use the summary report from a cumulative run
-      2. If you want to process only campus samples from a particular run, use the summary report from that run
-   3. Run `get_cview_bam_urls` with the following positional arguments:
-      1. The C-VIEW report S3 URL captured above (e.g., `s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv`)
-      2. The local directory in which the output file should be placed (e.g., `/shared/temp`)
-      3. If *and only if* you want to extract samples for a source *OTHER* than campus, you may pass an optional third argument containing that source (e.g., `SFO_WW`)
+   1. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
+      1. For the source UCSD, the suffix of the relevant file will include `RTL_wastewater`, while for the source UCSF, it will include `SFO_WW`
+      2. If you want to process all samples ever from that source, use the summary report from a cumulative run
+      3. If you want to process only samples from a particular run from that source, use the summary report from that run
+   2. Activate the `cview_currents` conda environment
 
 ```
-# Example:
-
 conda activate cview_currents
 # if the above gives the error `conda: command not found`, run
 source /shared/workspace/software/anaconda3/bin/activate 
 # then rerun the conda activate command
+```   
 
-# Command format:
+   3. Run `get_cview_bam_urls` with the following positional arguments:
+      1. The C-VIEW report S3 URL captured above (e.g., `s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv`)
+      2. The local directory in which the output file should be placed (e.g., `/shared/temp`)
+      3. If *and only if* you want to extract samples for a source *OTHER* than UCSD, you may pass an optional third argument containing that source (e.g., `SFO_WW`)
+
+```
+# Example:
+
+# Remember to activate the `cview_currents` conda environment first
+
+# Command format for UCSD:
 # get_cview_bam_urls  <cview_report_s3_url> <local_dir>
 get_cview_bam_urls s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv /shared/temp
+
+# Command format for UCSF:
+# get_cview_bam_urls  <cview_report_s3_url> <local_dir> SFO_WW
+
+# Remember to deactivate the conda environment
 ```
 
-2. Locate the output file, which will be named with the prefix of the `*_summary-report_all.csv` input file and with the suffix `_rtl_wastewater_highcov_s3_urls.txt` 
+   4. Deactivate the `cview_currents` conda environment with `conda deactivate`
+2. Locate the output file, which will be named with the prefix of the `*_summary-report_*.csv` input file and with the suffix `_<source>_wastewater_highcov_s3_urls.txt` 
    1. Example:
       1. Input: C-VIEW report `2022-08-10_01-07-42-all_summary-report_all.csv`
       2. Output: bam S3 url file `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`
