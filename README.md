@@ -272,7 +272,7 @@ bash transfer_genexus_bams_to_s3.sh /shared/temp s3://ucsd-rtl-test 221013_WW /s
 ```
 
 3. Update Freyja to get the latest barcodes and lineages
-   1. Run the `update_freyja.sh` script; no arguments are needed
+   1. Run `bash update_freyja.sh` in the `scripts` directory; no arguments are needed
    2. Run `squeue` to check its progress; do not continue until the queue is empty
 
 ```
@@ -358,6 +358,7 @@ rm -rf /tmp/cview-currents-JdsVoaNirv
 This pipeline is used for UCSD campus data and UCSF data. The pipeline is run from the head node of the cluster, via the following steps:
 
 1. Generate a file of relevant bam S3 urls
+
    1. Capture the S3 url of the C-VIEW `*_summary-report_*.csv` to search for inputs
       1. For the source UCSD, the suffix of the relevant file will include `RTL_wastewater`, while for the source UCSF, it will include `SFO_WW`
       2. If you want to process all samples ever from that source, use the summary report from a cumulative run
@@ -410,7 +411,7 @@ s3://ucsd-rtl-test/220527_A01535_0137_BHY5VWDSX3/220527_A01535_0137_BHY5VWDSX3_r
 
 
 3. Update Freyja to get the latest barcodes and lineages
-   1. Run the `update_freyja.sh` script; no arguments are needed
+   1. Run `bash update_freyja.sh` in the `scripts` directory; no arguments are needed
    2. Run `squeue` to check its progress; do not continue until the queue is empty
    
 ```
