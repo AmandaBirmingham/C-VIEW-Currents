@@ -19,7 +19,7 @@ def _get_date_for_sample_id(sample_df, sample_id):
         sample_date_str = sample_dates.iloc[0]
 
     if not sample_date_str:
-        raise ValueError(f"No date found for sample_id '{sample_id}'")
+        raise ValueError(f"No date found for sample id '{sample_id}'")
         # str_date_pieces = _extract_date_from_sampleid(sample_id)
         # sample_date_str = "/".join(str_date_pieces)
 
@@ -114,10 +114,6 @@ def generate_dashboard_reports(arg_list):
         curated_lineages, freyja_ww_df = fpu.load_inputs_from_input_dir(
             input_dir)
 
-    # TODO: this should go away once date column names are rationalized
-    freyja_ww_df.rename(
-        columns={fpu.METADATA_DATE_KEY: DATE_KEY}, inplace=True)
-
     # Apply QC threshold to freyja results, extract and write out failed ones
     freyja_fails_fp = fpu.make_fails_fp(input_dir, output_dir)
     freyja_passing_ww_df, _ = fpu.extract_qc_failing_freyja_results(
@@ -129,6 +125,10 @@ def generate_dashboard_reports(arg_list):
         freyja_passing_ww_w_id_df = _mine_metadata_from_cview_summary(
             freyja_passing_ww_w_id_df, input_dir, alt_sample_id_key)
     # endif there is an alt sample id key
+
+    # TODO: this should go away once date column names are rationalized
+    freyja_passing_ww_w_id_df.rename(
+        columns={fpu.METADATA_DATE_KEY: DATE_KEY}, inplace=True)
 
     labels_fp = fpu.get_labels_fp(input_dir)
     labels_df = pandas.read_csv(labels_fp)
@@ -256,8 +256,8 @@ def generate_reports():
 if __name__ == "__main__":
     # TODO: remove hardcoded arguments!
     arglist = ["",
-               "/Users/abirmingham/Desktop/2023-03-14_22-33-14_2023-02-18_01-21-40-all_summary-report_all_sfo_ww_wastewater_highcov_wo_err_bams_none/inputs",
-               "/Users/abirmingham/Desktop/2023-03-14_22-33-14_2023-02-18_01-21-40-all_summary-report_all_sfo_ww_wastewater_highcov_wo_err_bams_none/outputs",
+               "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/inputs",
+               "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/outputs",
                "sample_id"
                ]
     generate_dashboard_reports(arglist)
