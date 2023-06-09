@@ -339,7 +339,8 @@ and update freyja before continuing!
 5. Check the pipeline status
    1. Run `squeue` from time to time until the queue shows empty
 6. Commit result to Github
-   1. Follow the customized instructions printed out by `run_distributed_freyja.sh`
+   1. Note that it is not necessary to explicitly check the error logs (as it is for the campus pipeline) because the customized Github repo upload script (see below) incorporates this check automatically and will stop if any errors are detected.
+   2. Follow the customized instructions printed out by `run_distributed_freyja.sh`
       1. If desired, view the customized Github repo upload script
       2. Run the customized Github upload script
       3. Remove the temporary directory holding the customized script
@@ -365,32 +366,32 @@ This pipeline is used for UCSD campus data and UCSF data. The pipeline is run fr
       3. If you want to process only samples from a particular run from that source, use the summary report from that run
    2. Activate the `cview_currents` conda environment
 
-```
-conda activate cview_currents
-# if the above gives the error `conda: command not found`, run
-source /shared/workspace/software/anaconda3/bin/activate 
-# then rerun the conda activate command
-```   
+    ```
+    conda activate cview_currents
+    # if the above gives the error `conda: command not found`, run
+    source /shared/workspace/software/anaconda3/bin/activate 
+    # then rerun the conda activate command
+    ```   
 
    3. Run `get_cview_bam_urls` with the following positional arguments:
       1. The C-VIEW report S3 URL captured above (e.g., `s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv`)
       2. The local directory in which the output file should be placed (e.g., `/shared/temp`)
       3. If *and only if* you want to extract samples for a source *OTHER* than UCSD, you may pass an optional third argument containing that source (e.g., `SFO_WW`)
 
-```
-# Example:
-
-# Remember to activate the `cview_currents` conda environment first
-
-# Command format for UCSD:
-# get_cview_bam_urls  <cview_report_s3_url> <local_dir>
-get_cview_bam_urls s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv /shared/temp
-
-# Command format for UCSF:
-# get_cview_bam_urls  <cview_report_s3_url> <local_dir> SFO_WW
-
-# Remember to deactivate the conda environment
-```
+    ```
+    # Example:
+    
+    # Remember to activate the `cview_currents` conda environment first
+    
+    # Command format for UCSD:
+    # get_cview_bam_urls  <cview_report_s3_url> <local_dir>
+    get_cview_bam_urls s3://ucsd-rtl-test/phylogeny/2022-08-10_01-07-42-all/2022-08-10_01-07-42-all_summary-report_all.csv /shared/temp
+    
+    # Command format for UCSF:
+    # get_cview_bam_urls  <cview_report_s3_url> <local_dir> SFO_WW
+    
+    # Remember to deactivate the conda environment
+    ```
 
    4. Deactivate the `cview_currents` conda environment with `conda deactivate`
 2. Locate the output file, which will be named with the prefix of the `*_summary-report_*.csv` input file and with the suffix `_<source>_wastewater_highcov_s3_urls.txt` 
@@ -426,18 +427,25 @@ bash update_freyja.sh
       1. The file of S3 URLs to the relevant bam files (e.g., `/shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt`)
       2. A "run name" describing the dataset being processed (e.g., `2022-08-10_01-07-42-all_rtl_wastewater_highcov`)
       3. The S3 directory in which a folder for this run should be created (e.g., `s3://ucsd-rtl-test/freyja` and note this path **must not** have a slash on the end of it)
-      4. The report type `campus`
-   2. Check results, stored in `<s3_directory>/freyja/reports/<freyja_processing_timestamp>_<bam_urls_filename_filestem>_campus/outputs/` (where `<bam_urls_filename_filestem>` for the above example is `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls`)
-      1. Look through any Freyja QC failures, which (if any exist) are stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_qc_fails.tsv` 
-      2. Look through the report output, which is stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_aggregated_campus_dashboard_report_<report_processing_timestamp>.csv`
-      3. Assuming the QC failures are not worrisome, manually copy the report output to the `campus_dashboard` folder in the s3 bucket being used
-```
-# Example:
+      4. The report type; for UCSD, use `campus` and for UCSF use `none`
+      
+      ```
+      # Example:
+      
+      cd /shared/workspace/software/cview_currents/scripts
+      # Command format:
+      # bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
+      bash run_distributed_freyja.sh /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt 2022-08-10_01-07-42-all_rtl_wastewater_highcov s3://ucsd-rtl-test/freyja campus
+      # If desired, check job status by running:
+      squeue
+      ```
 
-cd /shared/workspace/software/cview_currents/scripts
-# Command format:
-# bash run_distributed_freyja.sh <bam_urls_file> <run_name> <s3_parent_directory>
-bash run_distributed_freyja.sh /shared/temp/2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls.txt 2022-08-10_01-07-42-all_rtl_wastewater_highcov s3://ucsd-rtl-test/freyja campus
-# If desired, check job status by running:
-squeue
-```
+   2. Check for errors in the log at `<s3_directory>/<run_name>/<run_name>_results/<freyja_processing_timestamp>/<run_name>_summary/<run_name>_freyja_aggregated.error.log` (e.g., `s3://ucsd-rtl-test/freyja/2022-08-10_01-07-42-all_rtl_wastewater_highcov/2022-08-10_01-07-42-all_rtl_wastewater_highcov_results/2022-09-03_00-17-00/2022-08-10_01-07-42-all_rtl_wastewater_highcov_summary/2022-08-10_01-07-42-all_rtl_wastewater_highcov_freyja_aggregated.error.log`)
+      1. If any errors are reported, examine the full log (not error log) for the affected sample under the `<s3_directory>/<run_name>/<run_name>_results/<freyja_processing_timestamp>/<run_name>_summary/` directory
+      2. The most common error is `cvxpy.error.SolverError: Solver 'ECOS' failed. Try another solver, or solve with verbose=True for more information.` If this error is reproducible for a given sample this sample needs to be left out of the run.  Rerun the run, and if the affected sample still fails, make a new version of the s3 bam urls file with it removed and then run that.
+   3. For UCSD data:
+      1. Check report results, stored in `<s3_directory>/freyja/reports/<freyja_processing_timestamp>_<bam_urls_filename_filestem>_campus/outputs/` (where `<bam_urls_filename_filestem>` for the above example is `2022-08-10_01-07-42-all_rtl_wastewater_highcov_s3_urls`)
+         1. Look through any Freyja QC failures, which (if any exist) are stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_qc_fails.tsv` 
+         2. Look through the report output, which is stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_aggregated_campus_dashboard_report_<report_processing_timestamp>.csv`
+      2. Assuming the QC failures are not worrisome, manually copy the report output to the `campus_dashboard` folder in the s3 bucket being used
+   4. For UCSF data, the reporting and delivery process is more manual and will not be automated as the sequencing of these samples is being discontinued.  
