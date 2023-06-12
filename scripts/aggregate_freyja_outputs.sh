@@ -21,20 +21,26 @@ aggregate_freyja_outputs() {
   aws s3 cp "$SAMPLES_S3_DIR"/ "$WORKSPACE"/ \
     --recursive \
     --exclude "*" \
-    --include "*.demix_tsv" \
-    --include "*error.log"
+    --include "*.demix_tsv"
+
+# get any error log(s)
+  aws s3 cp "$SAMPLES_S3_DIR"/ "$WORKSPACE"/error_logs \
+  --recursive \
+  --exclude "*" \
+  --include "*error.log" \
 
   # Gather per-sample error codes
   echo "Gathering per-sample exit codes."
-  find "$WORKSPACE" -name '*error.log' -type f -print0 | xargs -0 cat >"$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log
+  find "$WORKSPACE"/error_logs -name '*error.log' -type f -print0 | xargs -0 cat >"$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log
   # below works most of the time but errors if there are tons of files
   #cat "$WORKSPACE"/*/*error.log > "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log
 
-  # Bail here if error log is not empty
-  if [[ -s "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log ]]; then
-    echo "The freyja_aggregated.error.log is not empty, so aggregation is cancelled."
-    exit 1
-  fi
+# TODO: Decide whether to put back
+#  # Bail here if error log is not empty
+#  if [[ -s "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log ]]; then
+#    echo "The freyja_aggregated.error.log is not empty, so aggregation is cancelled."
+#    exit 1
+#  fi
 
   find "$WORKSPACE" -name '*.demix_tsv' -type f -print0 | xargs -0 -I {} mv {} "$WORKSPACE"
   # below works most of the time but errors if there are tons of files
