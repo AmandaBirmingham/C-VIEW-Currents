@@ -203,7 +203,7 @@ def generate_dashboard_report(arg_list):
     freyja_run_date = _extract_date_from_filename(freyja_results_fp)
 
     cview_summary_fp = fpu.get_single_file_by_suffix(
-        freyja_input_dir, "_summary-report_all.csv")
+        freyja_input_dir, "_summary-report_*.csv")
     cview_summary_df = pandas.read_csv(cview_summary_fp)
 
     labels_to_aggregate_df, lineage_to_parent_dict, \
