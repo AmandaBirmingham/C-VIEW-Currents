@@ -36,11 +36,11 @@ generate_freyja_reports() {
 
   cat "$WORKSPACE"/temp/*error.log > "$WORKSPACE"/"$REPORT_NAME"_reports.error.log
   rm -rf "$WORKSPACE"/temp
-# TODO: Decide whether to put back
-#  if [ -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file not empty
-#    echo "Errors in processing $RUN_NAME; report creation cancelled"
-#    return 1  # exit function, go straight to aws upload
-#  fi
+
+  if [ -s "$WORKSPACE"/"$REPORT_NAME"_reports.error.log ]; then  # if file not empty
+    echo "Errors in processing $RUN_NAME; report creation cancelled"
+    return 1  # exit function, go straight to aws upload
+  fi
 
   # Activate conda env cview_currents
   source $ANACONDADIR/activate cview_currents

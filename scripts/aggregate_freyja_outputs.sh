@@ -35,12 +35,11 @@ aggregate_freyja_outputs() {
   # below works most of the time but errors if there are tons of files
   #cat "$WORKSPACE"/*/*error.log > "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log
 
-# TODO: Decide whether to put back
-#  # Bail here if error log is not empty
-#  if [[ -s "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log ]]; then
-#    echo "The freyja_aggregated.error.log is not empty, so aggregation is cancelled."
-#    exit 1
-#  fi
+  # Bail here if error log is not empty
+  if [[ -s "$WORKSPACE"/"$RUN_NAME"_freyja_aggregated.error.log ]]; then
+    echo "The freyja_aggregated.error.log is not empty, so aggregation is cancelled."
+    exit 1
+  fi
 
   find "$WORKSPACE" -name '*.demix_tsv' -type f -print0 | xargs -0 -I {} mv {} "$WORKSPACE"
   # below works most of the time but errors if there are tons of files
