@@ -15,7 +15,7 @@ lineages prevalent in mixed-input samples like wastewater.
 6. [Running the Campus Pipeline](#running-the-campus-pipeline)
 
 
- Overview
+## Overview
 
 C-VIEW Currents runs freyja on specified input bam files and collates the results
 into reports formatted for use by either the [SEARCH dashboard](https://searchcovid.info/dashboards/wastewater-surveillance/)
