@@ -493,7 +493,7 @@ The example lineage list table below defines the same miniature set of variants/
 |SouthBay|SB|BQ.1.1.X|lineage|
 |SouthBay|SB|BF.7.X|lineage|
 
-Any variants or lineages found in the input that do NOT fall into one of these specified categories will be reported as "Other".
+Any variants or lineages found in the input that do NOT fall into one of these specified categories will be reported as "Other".  Note that the campus pipeline uses (only) the set of lineages/variants specified for the `PointLoma` site_location; this choice is hard-coded and cannot be changed by the user.
 
 The lineage list csv file is stored in the `reference_files` folder in the C-VIEW Currents installation, in a file with the naming format `sewage_seqs_<timestamp>_report_labels.csv`. The C-VIEW Currents code reads this directory and selects the *most recently modified* label file available. Obviously, the list of lineages of interest changes from time to time.  When this happens, DO NOT change the existing lineages list file--doing so will destroy the history/reproducibility of past results.  Instead, create a NEW lineages list file named with the timestamp of the date on which it was created (e.g., 2023-05-11_00-00-00) and put the new list into it.  
 
