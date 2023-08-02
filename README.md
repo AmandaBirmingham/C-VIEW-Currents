@@ -13,12 +13,14 @@ lineages prevalent in mixed-input samples like wastewater.
 4. [Configuring the Pipeline for Genexus Access](#configuring-the-pipeline-for-genexus-access)
 5. [Running the SEARCH Pipeline](#running-the-search-pipeline)
 6. [Running the Campus Pipeline](#running-the-campus-pipeline)
+7. [Modifying the Lineage List](#modifying-the-lineage-list)
 
 
 ## Overview
 
 C-VIEW Currents runs freyja on specified input bam files and collates the results
-into reports formatted for use by either the [SEARCH dashboard](https://searchcovid.info/dashboards/wastewater-surveillance/)
+into reports specifying the fraction of each viral lineage of interest that was observed in each
+input bam.  The reports are formatted for use by either the [SEARCH dashboard](https://searchcovid.info/dashboards/wastewater-surveillance/)
 or the UCSD campus dashboard.  For the SEARCH pipeline, various results are
 committed to Github repositories powering the SEARCH dashboard, while for the 
 campus pipeline, the output report file is uploaded to the S3 bucket monitored 
@@ -450,4 +452,19 @@ bash update_freyja.sh
          1. Look through any Freyja QC failures, which (if any exist) are stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_qc_fails.tsv` 
          2. Look through the report output, which is stored in the results directory in `<bam_urls_filename_filestem>_<freyja_processing_timestamp>_freyja_aggregated_campus_dashboard_report_<report_processing_timestamp>.csv`
       2. Assuming the QC failures are not worrisome, manually copy the report output to the `campus_dashboard` folder in the s3 bucket being used
-   4. For UCSF data, the reporting and delivery process is more manual and will not be automated as the sequencing of these samples is being discontinued.  
+   4. For UCSF data, the reporting and delivery process is more manual and will not be automated as the sequencing of these samples is being discontinued.
+  
+## Modifying the Lineage List
+
+C-VIEW Currents does not report the fraction of every lineage found in the input files; instead, it reports only the fractions of a specified set of lineages of interest and groups the remainder into a catch-all bin.  It also "rolls up" sub-lineages that are part of a lineage of interest into the fraction reported for that lineage of interest (for example, if BQ.1.X has been designated a lineage of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineages BQ.1.1.X and BQ.1.2.X).  Note that this roll-up correctly includes sub-lineages that are not named with the same prefix as their (distant) parent (e.g., BF.14 will correctly be rolled up with its parent-of-interest BA.5.X). 
+
+The exception to this is when a sub-lineage has specifically been called out as of interest in its own right, in which case the fraction of input associated with that sub-lineage will NOT be rolled up into the fraction of its parent.  For example, if both BQ.1.X *and* BQ.1.1.X have been designated as lineages of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineage BQ.1.2.X, but NOT the input categorized as BQ.1.1.X (which will be reported separately).
+
+The list of lineages of interest is manually provided since it is based on human interest.  It specifies lineages of interest *per site*, since it is possible that users may wish to track specific variants at one site but not another (although this has not been the case so far).  The same list also specifies the *variants* of interest per site.  It is in the form of a csv file with four columns: `site_location`, `site_prefix`, `rollup_label`, and `component_type`.  Each row specifies a single variant or lineage of interest.
+
+|Column|Description|Example|
+|------|-----------|-------|
+|`site_location`|The name of the site used in the `*_sewage_seqs.csv` file for this site in the [SEARCH repository](https://github.com/andersen-lab/SARS-CoV-2_WasteWater_San-Diego)|e.g. `PointLoma`|
+|`site_prefix`|The abbreviation of the site name used in the wastewater sample names for this site|e.g. `PL`|
+|`rollup_label`|The category label to be used in the output report for this lineage or variant|for variant, e.g. `Delta`; for lineage, e.g. `BQ.1.1.X`|
+|`component_type`|Whether the record specifies information on a variant of interest or a lineage of interest|`variant` or `lineage`|
