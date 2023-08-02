@@ -6,16 +6,16 @@ An extension to the [C-VIEW](https://github.com/ucsd-ccbb/C-VIEW)
 [Freyja](https://github.com/andersen-lab/Freyja) to identify variants and 
 lineages prevalent in mixed-input samples like wastewater.
 
-# Table of Contents
-1. [Overview](#Overview)
-2. [Installing the Pipeline](#Installing-the-Pipeline)
-3. [Creating a Cluster](#Creating-a-Cluster)
-4. [Configuring the Pipeline for Genexus Access](#Configuring-the-Pipeline-for-Genexus-Access)
-5. [Running the SEARCH Pipeline](#Running-the-SEARCH-Pipeline)
-6. [Running the Campus Pipeline](#Running-the-Campus-Pipeline)
+## Table of Contents
+1. [Overview](#overview)
+2. [Installing the Pipeline](#installing-the-pipeline)
+3. [Creating a Cluster](#creating-a-cluster)
+4. [Configuring the Pipeline for Genexus Access](#configuring-the-pipeline-for-genexus-access)
+5. [Running the SEARCH Pipeline](#running-the-search-pipeline)
+6. [Running the Campus Pipeline](#running-the-campus-pipeline)
 
 
-## Overview
+ Overview
 
 C-VIEW Currents runs freyja on specified input bam files and collates the results
 into reports formatted for use by either the [SEARCH dashboard](https://searchcovid.info/dashboards/wastewater-surveillance/)
@@ -49,7 +49,7 @@ following folder-/file-naming structure:
 **Note: Usually it will NOT be necessary to install the pipeline from scratch.**  The most
 current version of the pipeline is pre-installed on the so-labeled
 Amazon Web Services snapshot in region us-west-2 (Oregon),
-and this snapshot can be used directly to [create a cluster](#Creating-a-Cluster).
+and this snapshot can be used directly to [create a cluster](#creating-a-cluster).
 
 If a fresh installation *is* required, take the following steps:
 
@@ -228,7 +228,7 @@ To configure automated Genexus access:
 ## Running the SEARCH Pipeline
 
 Before beginning, ensure that the actions in the above 
-[Configuring the Pipeline for Genexus Access](#Configuring-the-Pipeline-for-Genexus-Access) 
+[Configuring the Pipeline for Genexus Access](#configuring-the-pipeline-for-genexus-access) 
 section have been completed.  The pipeline is run from the head node of the 
 cluster, via the following steps:
 
