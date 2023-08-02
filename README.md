@@ -456,9 +456,11 @@ bash update_freyja.sh
   
 ## Modifying the Lineage List
 
-C-VIEW Currents does not report the fraction of every lineage found in the input files; instead, it reports only the fractions of a specified set of lineages of interest and groups the remainder into a catch-all bin.  It also "rolls up" sub-lineages that are part of a lineage of interest into the fraction reported for that lineage of interest (for example, if BQ.1.X has been designated a lineage of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineages BQ.1.1.X and BQ.1.2.X).  Note that this roll-up correctly includes sub-lineages that are not named with the same prefix as their (distant) parent (e.g., BF.14 will correctly be rolled up with its parent-of-interest BA.5.X). 
+C-VIEW Currents does not report the fraction of every lineage found in the input files; instead, it reports only the fractions of a specified set of lineages of interest and groups the remainder into a catch-all bin.  When lineage of interest are defined using the inclusive `.X` suffix syntax, it also "rolls up" sub-lineages that are part of a lineage of interest into the fraction reported for that lineage of interest (for example, if BQ.1.X has been designated a lineage of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineages BQ.1.1.X and BQ.1.2.X).  Note that this roll-up correctly includes sub-lineages that are not named with the same prefix as their (distant) parent (e.g., BF.14 will correctly be rolled up with its parent-of-interest BA.5.X). 
 
-The exception to this is when a sub-lineage has specifically been called out as of interest in its own right, in which case the fraction of input associated with that sub-lineage will NOT be rolled up into the fraction of its parent.  For example, if both BQ.1.X *and* BQ.1.1.X have been designated as lineages of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineage BQ.1.2.X, but NOT the input categorized as BQ.1.1.X (which will be reported separately).
+There are two exceptions to this roll-up behavior.  One is when a sub-lineage has specifically been called out as of interest in its own right, in which case the fraction of input associated with that sub-lineage will NOT be rolled up into the fraction of its parent.  For example, if both BQ.1.X *and* BQ.1.1.X have been designated as lineages of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineage BQ.1.2.X, but NOT the input categorized as BQ.1.1.X (which will be reported separately).
+
+The second exception is when a lineage of interest has been defined specifically--i.e., with no `.X` suffix.  In this case, ONLY the fraction of input associated with that *exact* lineage will be reported.  For example, if BA.1 has been designated as a lineage of interest, then the reported fraction for BA.1 will include only the fraction of inputs assigned to BA.1 and not the fractions assigned to any sublineages (e.g. BA.1.1).
 
 The list of lineages of interest is manually provided since it is based on human interest, and is in the form of a csv file.  It specifies lineages of interest *per site*, since it is possible that users may wish to track specific variants at one site but not another (although this has not been the case so far). Note that this means that to track the same set of lineages for e.g. three sites, it is necessary to define that set three times in the file (once for each site).  The same list also specifies the *variants* of interest per site, and they must be handled in the same way.  
 
@@ -468,8 +470,9 @@ The csv file has four columns: `site_location`, `site_prefix`, `rollup_label`, a
 |------|-----------|-------|
 |`site_location`|The name of the site used in the `*_sewage_seqs.csv` file for this site in the [SEARCH repository](https://github.com/andersen-lab/SARS-CoV-2_WasteWater_San-Diego)|e.g. `PointLoma`|
 |`site_prefix`|The abbreviation of the site name used in the wastewater sample names for this site|e.g. `PL`|
-|`rollup_label`|The category label to be used in the output report for this lineage or variant|for variant, e.g. `Delta`; for lineage, e.g. `BQ.1.1.X`|
+|`rollup_label`|The category label to be used in the output report for this lineage or variant.  For lineages, use the `.X` suffix to include sub-lineages or leave it off to include only exact matches to the specified lineage.|for variant, e.g. `Delta`; for lineage, e.g. `BQ.1.1.X`|
 |`component_type`|Whether the record specifies information on a variant of interest or a lineage of interest|`variant` or `lineage`|
+
 
 The example lineage list table below defines the same miniature set of variants/lineages of interest for each of the three SEARCH sites:
 |site_location|site_prefix|rollup_label|component_type|
@@ -479,19 +482,19 @@ The example lineage list table below defines the same miniature set of variants/
 |PointLoma|PL|Alpha|variant|
 |PointLoma|PL|BQ.1.X|lineage|
 |PointLoma|PL|BQ.1.1.X|lineage|
-|PointLoma|PL|BF.7.X|lineage|
+|PointLoma|PL|BF.7|lineage|
 |Encina|ENC|Omicron|variant|
 |Encina|ENC|Delta|variant|
 |Encina|ENC|Alpha|variant|
 |Encina|ENC|BQ.1.X|lineage|
 |Encina|ENC|BQ.1.1.X|lineage|
-|Encina|ENC|BF.7.X|lineage|
+|Encina|ENC|BF.7|lineage|
 |SouthBay|SB|Omicron|variant|
 |SouthBay|SB|Delta|variant|
 |SouthBay|SB|Alpha|variant|
 |SouthBay|SB|BQ.1.X|lineage|
 |SouthBay|SB|BQ.1.1.X|lineage|
-|SouthBay|SB|BF.7.X|lineage|
+|SouthBay|SB|BF.7|lineage|
 
 Any variants or lineages found in the input that do NOT fall into one of these specified categories will be reported as "Other".  Note that the campus pipeline uses (only) the set of lineages/variants specified for the `PointLoma` site_location; this choice is hard-coded and cannot be changed by the user.
 
