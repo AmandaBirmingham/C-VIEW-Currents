@@ -460,7 +460,9 @@ C-VIEW Currents does not report the fraction of every lineage found in the input
 
 The exception to this is when a sub-lineage has specifically been called out as of interest in its own right, in which case the fraction of input associated with that sub-lineage will NOT be rolled up into the fraction of its parent.  For example, if both BQ.1.X *and* BQ.1.1.X have been designated as lineages of interest, then the reported fraction for BQ.1.X  will include both input categorized as BQ.1.X and that categorized as its sub-lineage BQ.1.2.X, but NOT the input categorized as BQ.1.1.X (which will be reported separately).
 
-The list of lineages of interest is manually provided since it is based on human interest.  It specifies lineages of interest *per site*, since it is possible that users may wish to track specific variants at one site but not another (although this has not been the case so far).  The same list also specifies the *variants* of interest per site.  It is in the form of a csv file with four columns: `site_location`, `site_prefix`, `rollup_label`, and `component_type`.  Each row specifies a single variant or lineage of interest.
+The list of lineages of interest is manually provided since it is based on human interest, and is in the form of a csv file.  It specifies lineages of interest *per site*, since it is possible that users may wish to track specific variants at one site but not another (although this has not been the case so far). Note that this means that to track the same set of lineages for e.g. three sites, it is necessary to define that set three times in the file (once for each site).  The same list also specifies the *variants* of interest per site, and they must be handled in the same way.  
+
+The csv file has four columns: `site_location`, `site_prefix`, `rollup_label`, and `component_type`.  Each row specifies a single variant or lineage of interest.
 
 |Column|Description|Example|
 |------|-----------|-------|
@@ -468,3 +470,36 @@ The list of lineages of interest is manually provided since it is based on human
 |`site_prefix`|The abbreviation of the site name used in the wastewater sample names for this site|e.g. `PL`|
 |`rollup_label`|The category label to be used in the output report for this lineage or variant|for variant, e.g. `Delta`; for lineage, e.g. `BQ.1.1.X`|
 |`component_type`|Whether the record specifies information on a variant of interest or a lineage of interest|`variant` or `lineage`|
+
+The example lineage list table below defines the same miniature set of variants/lineages of interest for each of the three SEARCH sites:
+|site_location|site_prefix|rollup_label|component_type|
+|-------------|-----------|------------|--------------|
+|PointLoma|PL|Omicron|variant|
+|PointLoma|PL|Delta|variant|
+|PointLoma|PL|Alpha|variant|
+|PointLoma|PL|BQ.1.X|lineage|
+|PointLoma|PL|BQ.1.1.X|lineage|
+|PointLoma|PL|BF.7.X|lineage|
+|Encina|ENC|Omicron|variant|
+|Encina|ENC|Delta|variant|
+|Encina|ENC|Alpha|variant|
+|Encina|ENC|BQ.1.X|lineage|
+|Encina|ENC|BQ.1.1.X|lineage|
+|Encina|ENC|BF.7.X|lineage|
+|SouthBay|SB|Omicron|variant|
+|SouthBay|SB|Delta|variant|
+|SouthBay|SB|Alpha|variant|
+|SouthBay|SB|BQ.1.X|lineage|
+|SouthBay|SB|BQ.1.1.X|lineage|
+|SouthBay|SB|BF.7.X|lineage|
+
+Any variants or lineages found in the input that do NOT fall into one of these specified categories will be reported as "Other".
+
+The lineage list csv file is stored in the `reference_files` folder in the C-VIEW Currents installation, in a file with the naming format `sewage_seqs_<timestamp>_report_labels.csv`. The C-VIEW Currents code reads this directory and selects the *most recently modified* label file available. Obviously, the list of lineages of interest changes from time to time.  When this happens, DO NOT change the existing lineages list file--doing so will destroy the history/reproducibility of past results.  Instead, create a NEW lineages list file named with the timestamp of the date on which it was created (e.g., 2023-05-11_00-00-00) and put the new list into it.  
+
+### Important Caveat 
+Changing the lineage file will change the list of lineages of interest reported for processing of all *future* runs.  In the cumulative results files produced for SEARCH, the new lineages of interest will be reported as new columns--and they will be populated with zero for all past dates before the firt run in which these lineages were added to the lineage list file.  Obviously, it is not necessarily the case that the new lineages of interest were completely absent before they were added to the lineage list--in fact, usually the reason that new lineages are added to the list is that they are increasing in prevalence.
+
+If one wants to get real past fractions of new lineages of interest, some additional work is required, and the amount depends on how far back in time one wants to look.  To get real fractions since the new lineage of interest was recognized in usher, the process is fairly simple since the new lineage will have been recorded in the freyja demix results.  In this case, one can concatenate all the freyja demix results back to the desired start date and then simply rerun the report generation on them using the new lineage list.  Use the `concat_past_freyja_runs.sh` script, **carefully following the instructions in the top comments** to create a fully populated input folder that can be used as the first parameter to a manual call of `make_search_reports` or `make_campus_reports`.
+
+To get real fractions of the new lineage of interest at points in the past BEFORE it was recognized in usher, it is necessary to do a full rerun of freyja on the past data using the new usher definitions.
