@@ -254,10 +254,10 @@ def generate_reports():
 
 
 if __name__ == "__main__":
-    # TODO: remove hardcoded arguments!
-    arglist = ["",
-               "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/inputs",
-               "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/outputs",
-               "sample_id"
-               ]
+    # # TODO: remove hardcoded arguments!
+    # arglist = ["",
+    #            "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/inputs",
+    #            "/Users/abirmingham/Desktop/2023-06-07_18-58-05_2023-05-13_21-59-44-230505_A01535_0318_BH5NK5DSX7_summary-report_SFO_WW_sfo_ww_wastewater_highcov_wo_SEARCH-227339_none/outputs",
+    #            "sample_id"
+    #            ]
     generate_dashboard_reports(arglist)
