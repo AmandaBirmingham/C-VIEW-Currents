@@ -14,7 +14,7 @@ lineages prevalent in mixed-input samples like wastewater.
 5. [Running the SEARCH Pipeline](#running-the-search-pipeline)
 6. [Running the Campus Pipeline](#running-the-campus-pipeline)
 7. [Modifying the Lineage List](#modifying-the-lineage-list)
-   * [Important Caveat: Applying New Lineages to Past Data](#important-caveat-applying-new-lineages-to-past-data)
+   * [Important Caveat: Annotating New Lineages in Old Data](#important-caveat-annotating-new-lineages-in-old-data)
 
 
 ## Overview
@@ -501,7 +501,7 @@ Any variants or lineages found in the input that do NOT fall into one of these s
 
 The lineage list csv file is stored in the `reference_files` folder in the C-VIEW Currents installation, in a file with the naming format `sewage_seqs_<timestamp>_report_labels.csv`. The C-VIEW Currents code reads this directory and selects the *most recently modified* label file available. Obviously, the list of lineages of interest changes from time to time.  When this happens, DO NOT change the existing lineages list file--doing so will destroy the history/reproducibility of past results.  Instead, create a NEW lineages list file named with the timestamp of the date on which it was created (e.g., 2023-05-11_00-00-00) and put the new list into it.  
 
-### Important Caveat: Applying New Lineages to Past Data
+### Important Caveat: Annotating New Lineages in Old Data
 Changing the lineage file will change the list of lineages of interest reported for processing of all *future* runs.  In the cumulative results files produced for SEARCH, the new lineages of interest will be reported as new columns--and they will be populated with zero for all past dates before the firt run in which these lineages were added to the lineage list file.  Obviously, it is not necessarily the case that the new lineages of interest were completely absent before they were added to the lineage list--in fact, usually the reason that new lineages are added to the list is that they are increasing in prevalence.
 
 If one wants to get real past fractions of new lineages of interest, some additional work is required, and the amount depends on how far back in time one wants to look.  To get real fractions *since the point at which the new lineage of interest was recognized in usher*, the process is fairly simple since the new lineage will have been recorded in the freyja demix results.  In this case, one can concatenate all the freyja demix results back to the desired start date and then simply rerun the relevant python report generation function on them using the new lineage list:
@@ -512,7 +512,9 @@ If one wants to get real past fractions of new lineages of interest, some additi
 
 `make_search_reports` takes from two to four inputs, depending on the desired usage:
 
-`make_search_reports <structured_input_directory> <output_directory> <optional: alternate_sample_id_key> <optional: 'suppress'>`
+```
+make_search_reports <structured_input_directory> <output_directory> <optional: alternate_sample_id_key> <optional: 'suppress'>
+```
 
 The `<structured_input_directory>` should be the full path to the folder created by `concat_past_freyja_runs.sh`, and the `<output_directory>` should be the full path to the existing directory under which the output directory is to be added.  The optional `<alternate_sample_id_key>` supports a historical function of the script which is no longer in use, so this parameter should not be provided.  The optional last argument 'suppress' suppresses the creation of intermediate exploded per-sample files; these are copious and not necessary for report creation, although they are useful resources to refer to in cases where the report shows surprising results.
 
